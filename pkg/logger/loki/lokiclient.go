@@ -65,7 +65,7 @@ type lokiClient struct {
 }
 
 // MakeLokiLogger - factory for Loki client
-func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, enaConsole, enaLoki bool) *lokiClient {
+func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, enaConsole, enaLoki bool, batch batchConfig) *lokiClient {
 	ch := make(chan streamItem, MAX_ENTRIES)
 
 	client := lokiClient{
@@ -75,8 +75,11 @@ func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, enaConsole, enaLoki bool) *
 		zl:            zl,
 		entries:       ch,
 	}
-	client.waitGroup.Add(1)
-	go client.run()
+
+	if enaLoki {
+		client.waitGroup.Add(1)
+		go client.run()
+	}
 
 	return &client
 }
@@ -102,35 +105,44 @@ func (c *lokiClient) push(labels string, entry *v1.Entry) {
 
 func (c *lokiClient) run() {
 
-	var batch []*v1.Entry
+	batch := make(map[string]*v1.Entry)
+
 	batchSize := 0
 	maxWait := time.NewTimer(c.batch.BatchWait)
 
 	defer func() {
 		if batchSize > 0 {
-			c.process("my-labels", batch)
+			c.process(batch)
 		}
-
 		c.waitGroup.Done()
 	}()
 
 	for {
 		select {
+
 		case <-c.quit:
+			if batchSize > 0 {
+				c.process(batch)
+			}
 			return
+
 		case entry := <-c.entries:
-			batch = append(batch, entry.entry)
+
+			batch[entry.labels] = entry.entry
 			batchSize++
+
 			if batchSize >= c.batch.BatchEntriesNumber {
-				c.process("my-labels", batch)
-				batch = []*v1.Entry{}
+				c.process(batch)
+				batch = make(map[string]*v1.Entry)
 				batchSize = 0
 				maxWait.Reset(c.batch.BatchWait)
 			}
+
 		case <-maxWait.C:
+
 			if batchSize > 0 {
-				c.process("my-labels", batch)
-				batch = []*v1.Entry{}
+				c.process(batch)
+				batch = make(map[string]*v1.Entry)
 				batchSize = 0
 			}
 			maxWait.Reset(c.batch.BatchWait)
@@ -138,13 +150,15 @@ func (c *lokiClient) run() {
 	}
 }
 
-func (c *lokiClient) process(labels string, entries []*v1.Entry) error {
-
+func (c *lokiClient) process(entries map[string]*v1.Entry) error {
 	var streams []*v1.Stream
-	streams = append(streams, &v1.Stream{
-		Labels:  labels,
-		Entries: entries,
-	})
+
+	for key, v := range entries {
+		streams = append(streams, &v1.Stream{
+			Labels: key,
+			Entry:  v,
+		})
+	}
 
 	req := v1.PushRequest{
 		Streams: streams,

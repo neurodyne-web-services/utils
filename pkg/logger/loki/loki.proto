@@ -12,7 +12,7 @@ message PushRequest {
 
 message Stream {
   string labels = 1;
-  repeated Entry entries = 2;
+  Entry entry = 2;
 }
 
 message Entry {
