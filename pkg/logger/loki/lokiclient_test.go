@@ -1,25 +1,31 @@
 package loki
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/neurodyne-web-services/utils/pkg/logger"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zapcore"
+)
+
+const (
+	url     = "http://localhost:3100/api/prom/push"
+	ctype   = "application/x-protobuf"
+	service = "drevo"
 )
 
 func Test_loki(t *testing.T) {
 
-	conf := lokiConfig{
-		url:   "http://localhost:3100/api/prom/push",
-		ctype: "application/x-protobuf",
-		level: zapcore.DebugLevel,
-	}
+	conf := MakeLokiConfig(url, ctype, service, zapcore.DebugLevel)
 
-	b := &bytes.Buffer{}
-	zl := logger.MakeBufferLogger(b, "debug", "console")
+	job0 := "list"
+	job1 := "put"
 
-	loki := MakeLokiClient(conf, zl)
+	zl, err := logger.MakeLogger("debug", "console")
+	assert.NoError(t, err)
 
-	loki.Debugf("Hey there")
+	loki := MakeLokiLogger(conf, zl, true, true)
+
+	loki.Debugf(job0, "My message is %s", "Hey There")
+	loki.Debugf(job1, "My number is %d", 5)
 }

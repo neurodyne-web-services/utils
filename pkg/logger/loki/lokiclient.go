@@ -15,41 +15,56 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const (
+	MAX_ENTRIES = 8
+)
+
 type serverResp struct {
 	code int
 	body []byte
 }
 
 type lokiConfig struct {
-	url   string
-	ctype string
-	level zapcore.Level
+	url     string
+	ctype   string
+	service string
+	level   zapcore.Level
+}
+
+func MakeLokiConfig(url, ctype, service string, level zapcore.Level) lokiConfig {
+	return lokiConfig{
+		url:     url,
+		ctype:   ctype,
+		service: service,
+		level:   level,
+	}
 }
 
 type lokiClient struct {
 	Client
-	conf  lokiConfig
-	http  http.Client
-	zl    *zap.Logger
-	items []v1.Stream
+	conf          lokiConfig
+	http          http.Client
+	zl            *zap.Logger
+	enableLoki    bool
+	enableConsole bool
+	streams       chan []*v1.Stream
 }
 
-// MakeLokiClient - factory for Loki client
-func MakeLokiClient(conf lokiConfig, zl *zap.Logger) lokiClient {
-	return lokiClient{conf: conf, zl: zl}
+// MakeLokiLogger - factory for Loki client
+func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, enaConsole, enaLoki bool) lokiClient {
+	return lokiClient{conf: conf, zl: zl, enableConsole: enaConsole, enableLoki: enaLoki}
 }
 
-func (c lokiClient) Debugf(format string, args ...interface{}) {
-	c.zl.Sugar().Debugf(format, args)
+func (c lokiClient) Debugf(job, template string, args ...interface{}) {
 
-	if c.conf.level == zapcore.DebugLevel {
-		fmt.Println("Loki Debug called")
-		tmp := makeEntry(format, "Debug:", args...)
+	if c.enableConsole {
+		c.zl.Sugar().Debugf(template, args...)
+	}
 
-		service_name := "loki-service"
-		job_name := "my-job-0"
+	if c.enableLoki && c.conf.level == zapcore.DebugLevel {
+		tmp := makeEntry(template, "Debug: ", args...)
 
-		labels := "{service=\"" + service_name + "\",job=\"" + job_name + "\"}"
+		labels := "{service=\"" + c.conf.service + "\",job=\"" + job + "\"}"
 		c.Process(labels, tmp)
 	}
 }
