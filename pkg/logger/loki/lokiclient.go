@@ -2,10 +2,12 @@ package loki
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type serverResp struct {
@@ -16,30 +18,38 @@ type serverResp struct {
 type lokiConfig struct {
 	url   string
 	ctype string
+	level zapcore.Level
 }
 
 type lokiClient struct {
 	Client
-	cconf ClientConfig
-	lconf lokiConfig
-	http  http.Client
-	zl    *zap.Logger
+	conf lokiConfig
+	http http.Client
+	zl   *zap.Logger
 }
 
 // MakeLokiClient - factory for Loki client
-func MakeLokiClient(cconf ClientConfig, lconf lokiConfig, zl *zap.Logger) lokiClient {
-	return lokiClient{cconf: cconf, lconf: lconf, zl: zl}
+func MakeLokiClient(conf lokiConfig, zl *zap.Logger) lokiClient {
+	return lokiClient{conf: conf, zl: zl}
 }
 
-func (c *lokiClient) Push(buff *bytes.Buffer) (serverResp, error) {
+func (c lokiClient) Debugf(format string, args ...interface{}) {
+	c.zl.Sugar().Debugf(format, args)
+
+	if c.conf.level == zapcore.DebugLevel {
+		fmt.Println("Loki Debug called")
+	}
+}
+
+func (c lokiClient) Push(buff *bytes.Buffer) (serverResp, error) {
 	var out = serverResp{}
 
-	req, err := http.NewRequest("POST", c.lconf.url, buff)
+	req, err := http.NewRequest("POST", c.conf.url, buff)
 	if err != nil {
 		return out, err
 	}
 
-	req.Header.Set("Content-Type", c.lconf.ctype)
+	req.Header.Set("Content-Type", c.conf.ctype)
 
 	resp, err := c.http.Do(req)
 	if err != nil {
