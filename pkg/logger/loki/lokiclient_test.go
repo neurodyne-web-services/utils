@@ -17,7 +17,7 @@ const (
 
 func Test_loki(t *testing.T) {
 
-	conf := MakeLokiConfig(url, ctype, service, zapcore.DebugLevel)
+	conf := MakeLokiConfig(true, true, url, ctype, service, zapcore.DebugLevel)
 
 	job0 := "list"
 	job1 := "put"
@@ -25,16 +25,18 @@ func Test_loki(t *testing.T) {
 	zl, err := logger.MakeLogger("debug", "console")
 	assert.NoError(t, err)
 
-	batch := batchConfig{
-		BatchEntriesNumber: 8,
-		BatchWait:          300,
+	batch := MakeBatchConfig(8, 30)
+	loki := MakeLokiLogger(conf, zl, batch)
+
+	loki.Infof(job0, "My message is %s", "Hey There")
+	loki.Warnf(job1, "Starting the test...")
+
+	for i := 0; i < 3; i++ {
+		loki.Debugf(job1, "My number is %d", i)
 	}
 
-	loki := MakeLokiLogger(conf, zl, true, true, batch)
-
-	loki.Debugf(job0, "My message is %s", "Hey There")
-	loki.Debugf(job1, "My number is %d", 5)
-	loki.Debugf(job1, "How are you, user %s ", "Ivan")
+	loki.Errorf(job1, "Done logging, %s ", "Ivan")
 
 	time.Sleep(time.Second)
+	loki.Shutdown()
 }

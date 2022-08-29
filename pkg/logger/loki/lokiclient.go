@@ -20,63 +20,29 @@ const (
 	MAX_ENTRIES = 8
 )
 
-type serverResp struct {
-	code int
-	body []byte
-}
-
-type streamItem struct {
-	labels string
-	entry  *v1.Entry
-}
-
-type lokiConfig struct {
-	url     string
-	ctype   string
-	service string
-	level   zapcore.Level
-}
-
-func MakeLokiConfig(url, ctype, service string, level zapcore.Level) lokiConfig {
-	return lokiConfig{
-		url:     url,
-		ctype:   ctype,
-		service: service,
-		level:   level,
-	}
-}
-
-type batchConfig struct {
-	BatchEntriesNumber int
-	BatchWait          time.Duration
-}
-
 type lokiClient struct {
 	Client
-	enableLoki    bool
-	enableConsole bool
-	batch         batchConfig
-	conf          lokiConfig
-	http          http.Client
-	zl            *zap.Logger
-	entries       chan streamItem
-	quit          chan struct{}
-	waitGroup     sync.WaitGroup
+
+	batch     batchConfig
+	conf      lokiConfig
+	http      http.Client
+	zl        *zap.SugaredLogger
+	entries   chan streamItem
+	done      chan struct{}
+	waitGroup sync.WaitGroup
 }
 
 // MakeLokiLogger - factory for Loki client
-func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, enaConsole, enaLoki bool, batch batchConfig) *lokiClient {
-	ch := make(chan streamItem, MAX_ENTRIES)
+func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, batch batchConfig) *lokiClient {
 
 	client := lokiClient{
-		enableConsole: enaConsole,
-		enableLoki:    enaLoki,
-		conf:          conf,
-		zl:            zl,
-		entries:       ch,
+		conf:    conf,
+		zl:      zl.Sugar(),
+		entries: make(chan streamItem, MAX_ENTRIES),
+		done:    make(chan struct{}),
 	}
 
-	if enaLoki {
+	if conf.enableLoki {
 		client.waitGroup.Add(1)
 		go client.run()
 	}
@@ -86,13 +52,45 @@ func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, enaConsole, enaLoki bool, b
 
 func (c *lokiClient) Debugf(job, template string, args ...interface{}) {
 
-	if c.enableConsole {
-		c.zl.Sugar().Debugf(template, args...)
+	if c.conf.enableConsole {
+		c.zl.Debugf(template, args...)
 	}
 
-	if c.enableLoki && c.conf.level == zapcore.DebugLevel {
-		labels := "{service=\"" + c.conf.service + "\",job=\"" + job + "\"}"
-		c.push(labels, makeEntry(template, "Debug: ", args...))
+	if c.conf.enableLoki && c.conf.level == zapcore.DebugLevel {
+		c.push(buildLabels(c.conf.service, job), makeEntry(template, "Debug: ", args...))
+	}
+}
+
+func (c *lokiClient) Errorf(job, template string, args ...interface{}) {
+
+	if c.conf.enableConsole {
+		c.zl.Errorf(template, args...)
+	}
+
+	if c.conf.enableLoki && c.conf.level <= zapcore.ErrorLevel {
+		c.push(buildLabels(c.conf.service, job), makeEntry(template, "Error: ", args...))
+	}
+}
+
+func (c *lokiClient) Warnf(job, template string, args ...interface{}) {
+
+	if c.conf.enableConsole {
+		c.zl.Warnf(template, args...)
+	}
+
+	if c.conf.enableLoki && c.conf.level <= zapcore.WarnLevel {
+		c.push(buildLabels(c.conf.service, job), makeEntry(template, "Warn: ", args...))
+	}
+}
+
+func (c *lokiClient) Infof(job, template string, args ...interface{}) {
+
+	if c.conf.enableConsole {
+		c.zl.Infof(template, args...)
+	}
+
+	if c.conf.enableLoki && c.conf.level <= zapcore.InfoLevel {
+		c.push(buildLabels(c.conf.service, job), makeEntry(template, "Info: ", args...))
 	}
 }
 
@@ -120,7 +118,7 @@ func (c *lokiClient) run() {
 	for {
 		select {
 
-		case <-c.quit:
+		case <-c.done:
 			if batchSize > 0 {
 				c.process(batch)
 			}
@@ -131,7 +129,7 @@ func (c *lokiClient) run() {
 			batch[entry.labels] = entry.entry
 			batchSize++
 
-			if batchSize >= c.batch.BatchEntriesNumber {
+			if batchSize >= c.batch.BatchSize {
 				c.process(batch)
 				batch = make(map[string]*v1.Entry)
 				batchSize = 0
@@ -208,6 +206,11 @@ func (c *lokiClient) send(buff *bytes.Buffer) (serverResp, error) {
 	return out, nil
 }
 
+func (c *lokiClient) Shutdown() {
+	close(c.done)
+	c.waitGroup.Wait()
+}
+
 func makeEntry(format, prefix string, args ...interface{}) *v1.Entry {
 	now := time.Now().UnixNano()
 	return &v1.Entry{
@@ -217,4 +220,8 @@ func makeEntry(format, prefix string, args ...interface{}) *v1.Entry {
 		},
 		Line: fmt.Sprintf(prefix+format, args...),
 	}
+}
+
+func buildLabels(service, job string) string {
+	return "{service=\"" + service + "\",job=\"" + job + "\"}"
 }
