@@ -6,18 +6,18 @@ import (
 
 	"github.com/neurodyne-web-services/utils/pkg/logger"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zapcore"
 )
 
 const (
-	url     = "http://localhost:3100/api/prom/push"
-	ctype   = "application/x-protobuf"
-	service = "drevo"
+	url       = "http://localhost:3100/api/prom/push"
+	ctype     = "application/x-protobuf"
+	service   = "drevo"
+	verbosity = "debug"
 )
 
 func Test_loki(t *testing.T) {
 
-	conf := MakeLokiConfig(true, true, url, ctype, service, zapcore.DebugLevel)
+	conf := MakeLokiConfig(true, true, url, ctype, service, verbosity)
 
 	job0 := "list"
 	job1 := "put"

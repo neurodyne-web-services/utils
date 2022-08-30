@@ -20,7 +20,7 @@ const (
 	MAX_ENTRIES = 8
 )
 
-type lokiClient struct {
+type LokiLogger struct {
 	Client
 
 	batch     batchConfig
@@ -33,9 +33,9 @@ type lokiClient struct {
 }
 
 // MakeLokiLogger - factory for Loki client
-func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, batch batchConfig) *lokiClient {
+func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, batch batchConfig) *LokiLogger {
 
-	client := lokiClient{
+	client := LokiLogger{
 		conf:    conf,
 		zl:      zl.Sugar(),
 		entries: make(chan streamItem, MAX_ENTRIES),
@@ -50,7 +50,7 @@ func MakeLokiLogger(conf lokiConfig, zl *zap.Logger, batch batchConfig) *lokiCli
 	return &client
 }
 
-func (c *lokiClient) Debugf(job, template string, args ...interface{}) {
+func (c *LokiLogger) Debugf(job, template string, args ...interface{}) {
 
 	if c.conf.enableConsole {
 		c.zl.Debugf(template, args...)
@@ -61,7 +61,7 @@ func (c *lokiClient) Debugf(job, template string, args ...interface{}) {
 	}
 }
 
-func (c *lokiClient) Errorf(job, template string, args ...interface{}) {
+func (c *LokiLogger) Errorf(job, template string, args ...interface{}) {
 
 	if c.conf.enableConsole {
 		c.zl.Errorf(template, args...)
@@ -72,7 +72,7 @@ func (c *lokiClient) Errorf(job, template string, args ...interface{}) {
 	}
 }
 
-func (c *lokiClient) Warnf(job, template string, args ...interface{}) {
+func (c *LokiLogger) Warnf(job, template string, args ...interface{}) {
 
 	if c.conf.enableConsole {
 		c.zl.Warnf(template, args...)
@@ -83,7 +83,7 @@ func (c *lokiClient) Warnf(job, template string, args ...interface{}) {
 	}
 }
 
-func (c *lokiClient) Infof(job, template string, args ...interface{}) {
+func (c *LokiLogger) Infof(job, template string, args ...interface{}) {
 
 	if c.conf.enableConsole {
 		c.zl.Infof(template, args...)
@@ -94,14 +94,14 @@ func (c *lokiClient) Infof(job, template string, args ...interface{}) {
 	}
 }
 
-func (c *lokiClient) push(labels string, entry *v1.Entry) {
+func (c *LokiLogger) push(labels string, entry *v1.Entry) {
 	c.entries <- streamItem{
 		labels: labels,
 		entry:  entry,
 	}
 }
 
-func (c *lokiClient) run() {
+func (c *LokiLogger) run() {
 
 	batch := make(map[string]*v1.Entry)
 
@@ -148,7 +148,7 @@ func (c *lokiClient) run() {
 	}
 }
 
-func (c *lokiClient) process(entries map[string]*v1.Entry) error {
+func (c *LokiLogger) process(entries map[string]*v1.Entry) error {
 	var streams []*v1.Stream
 
 	for key, v := range entries {
@@ -181,7 +181,7 @@ func (c *lokiClient) process(entries map[string]*v1.Entry) error {
 	return nil
 }
 
-func (c *lokiClient) send(buff *bytes.Buffer) (serverResp, error) {
+func (c *LokiLogger) send(buff *bytes.Buffer) (serverResp, error) {
 	var out = serverResp{}
 
 	req, err := http.NewRequest("POST", c.conf.url, buff)
@@ -206,7 +206,7 @@ func (c *lokiClient) send(buff *bytes.Buffer) (serverResp, error) {
 	return out, nil
 }
 
-func (c *lokiClient) Shutdown() {
+func (c *LokiLogger) Shutdown() {
 	close(c.done)
 	c.waitGroup.Wait()
 }
