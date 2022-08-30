@@ -71,7 +71,7 @@ func (c *LokiLogger) Error(job string, args ...interface{}) {
 		c.zl.Error(args...)
 	}
 
-	if c.conf.loki.enable && c.conf.loki.verbosity == "error" {
+	if c.conf.loki.enable && logger.GetZapLevel(c.conf.loki.verbosity) <= c.level {
 		c.push(buildLabels(c.conf.lcfg.service, job), makeEntry("", "Error: ", args...))
 	}
 }
@@ -82,7 +82,7 @@ func (c *LokiLogger) Warn(job string, args ...interface{}) {
 		c.zl.Warn(args...)
 	}
 
-	if c.conf.loki.enable && c.conf.loki.verbosity == "warn" {
+	if c.conf.loki.enable && logger.GetZapLevel(c.conf.loki.verbosity) <= c.level {
 		c.push(buildLabels(c.conf.lcfg.service, job), makeEntry("", "Warn: ", args...))
 	}
 }
@@ -93,7 +93,7 @@ func (c *LokiLogger) Info(job string, args ...interface{}) {
 		c.zl.Info(args...)
 	}
 
-	if c.conf.loki.enable && c.conf.loki.verbosity == "info" {
+	if c.conf.loki.enable && logger.GetZapLevel(c.conf.loki.verbosity) <= c.level {
 		c.push(buildLabels(c.conf.lcfg.service, job), makeEntry("", "Info: ", args...))
 	}
 }
@@ -115,7 +115,7 @@ func (c *LokiLogger) Errorf(job, template string, args ...interface{}) {
 		c.zl.Errorf(template, args...)
 	}
 
-	if c.conf.loki.enable && c.conf.loki.verbosity == "error" {
+	if c.conf.loki.enable && logger.GetZapLevel(c.conf.loki.verbosity) <= c.level {
 		c.push(buildLabels(c.conf.lcfg.service, job), makeEntry(template, "Error: ", args...))
 	}
 }
@@ -126,7 +126,7 @@ func (c *LokiLogger) Warnf(job, template string, args ...interface{}) {
 		c.zl.Warnf(template, args...)
 	}
 
-	if c.conf.loki.enable && c.conf.loki.verbosity == "warn" {
+	if c.conf.loki.enable && logger.GetZapLevel(c.conf.loki.verbosity) <= c.level {
 		c.push(buildLabels(c.conf.lcfg.service, job), makeEntry(template, "Warn: ", args...))
 	}
 }
@@ -137,7 +137,7 @@ func (c *LokiLogger) Infof(job, template string, args ...interface{}) {
 		c.zl.Infof(template, args...)
 	}
 
-	if c.conf.loki.enable && c.conf.loki.verbosity == "info" {
+	if c.conf.loki.enable && logger.GetZapLevel(c.conf.loki.verbosity) <= c.level {
 		c.push(buildLabels(c.conf.lcfg.service, job), makeEntry(template, "Info: ", args...))
 	}
 }

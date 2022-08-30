@@ -38,13 +38,13 @@ func Test_loki(t *testing.T) {
 	loki := MakeLokiLogger(conf, zl, batch)
 
 	loki.Warnf(job0, "My message is %s", "Hey There")
-	loki.Infof(job1, "Starting the test...")
+	loki.Infof(job0, "Starting the test...")
 
 	for i := 0; i < 3; i++ {
 		loki.Debugf(job1, "My number is %d", i)
 	}
 
-	loki.Errorf(job1, "Done logging, %s ", "Ivan")
+	loki.Errorf(job0, "Done logging, %s ", "Ivan")
 
 	time.Sleep(time.Second)
 	loki.Shutdown()

@@ -12,7 +12,7 @@ import (
 // MakeLogger - simple customized console logger for dev
 func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 
-	var level zapcore.Level
+	level := GetZapLevel(verbosity)
 
 	cfg := zap.Config{
 		Encoding:         encoding,
