@@ -4,10 +4,14 @@ import (
 	"time"
 
 	v1 "github.com/neurodyne-web-services/utils/pkg/logger/loki/genout/v1"
-	"go.uber.org/zap/zapcore"
 )
 
 type Client interface {
+	Debug(job string, args ...interface{})
+	Info(job string, args ...interface{})
+	Warn(job string, args ...interface{})
+	Error(job string, args ...interface{})
+
 	Debugf(job, template string, args ...interface{})
 	Infof(job, template string, args ...interface{})
 	Warnf(job, template string, args ...interface{})
@@ -34,41 +38,31 @@ func MakeBatchConfig(size int, wait time.Duration) batchConfig {
 	return batchConfig{size, wait}
 }
 
-type lokiConfig struct {
-	enableLoki    bool
-	enableConsole bool
-	url           string
-	ctype         string
-	service       string
-	level         zapcore.Level
+type LogConnector struct {
+	enable    bool
+	verbosity string
 }
 
-func MakeLokiConfig(enaLoki, enaConsole bool, url, ctype, service, verbosity string) lokiConfig {
-	var level zapcore.Level
+func MakeLogConnector(verb string, ena bool) LogConnector {
+	return LogConnector{ena, verb}
+}
 
-	switch verbosity {
+type LokiConfig struct {
+	url     string
+	ctype   string
+	service string
+}
 
-	case "debug":
-		level = zapcore.DebugLevel
+type config struct {
+	console LogConnector
+	loki    LogConnector
+	lcfg    LokiConfig
+}
 
-	case "error":
-		level = zapcore.ErrorLevel
-
-	case "warn":
-		level = zapcore.WarnLevel
-
-	case "info":
-		level = zapcore.InfoLevel
-
-	default:
-		level = zapcore.InfoLevel
-	}
-	return lokiConfig{
-		enableLoki:    enaLoki,
-		enableConsole: enaConsole,
-		url:           url,
-		ctype:         ctype,
-		service:       service,
-		level:         level,
+func MakeConfig(cons, loki LogConnector, lcfg LokiConfig) config {
+	return config{
+		console: cons,
+		loki:    loki,
+		lcfg:    lcfg,
 	}
 }

@@ -17,7 +17,16 @@ const (
 
 func Test_loki(t *testing.T) {
 
-	conf := MakeLokiConfig(true, true, url, ctype, service, verbosity)
+	consConn := MakeLogConnector(verbosity, true)
+	lokiConn := MakeLogConnector(verbosity, true)
+
+	lokiConf := LokiConfig{
+		url:     url,
+		ctype:   ctype,
+		service: service,
+	}
+
+	conf := MakeConfig(consConn, lokiConn, lokiConf)
 
 	job0 := "list"
 	job1 := "put"
@@ -28,8 +37,8 @@ func Test_loki(t *testing.T) {
 	batch := MakeBatchConfig(8, 30)
 	loki := MakeLokiLogger(conf, zl, batch)
 
-	loki.Infof(job0, "My message is %s", "Hey There")
-	loki.Warnf(job1, "Starting the test...")
+	loki.Warnf(job0, "My message is %s", "Hey There")
+	loki.Infof(job1, "Starting the test...")
 
 	for i := 0; i < 3; i++ {
 		loki.Debugf(job1, "My number is %d", i)

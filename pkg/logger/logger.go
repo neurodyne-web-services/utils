@@ -14,24 +14,6 @@ func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 
 	var level zapcore.Level
 
-	switch verbosity {
-
-	case "debug":
-		level = zapcore.DebugLevel
-
-	case "error":
-		level = zapcore.ErrorLevel
-
-	case "warn":
-		level = zapcore.WarnLevel
-
-	case "info":
-		level = zapcore.InfoLevel
-
-	default:
-		level = zapcore.InfoLevel
-	}
-
 	cfg := zap.Config{
 		Encoding:         encoding,
 		Level:            zap.NewAtomicLevelAt(level),
@@ -56,52 +38,62 @@ func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 
 func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core {
 
-	var enc zapcore.Encoder
-	var level zapcore.Level
-
-	switch verbosity {
-
-	case "debug":
-		level = zapcore.DebugLevel
-
-	case "err":
-		level = zapcore.WarnLevel
-
-	case "warn":
-		level = zapcore.WarnLevel
-
-	case "info":
-		level = zapcore.WarnLevel
-
-	default:
-		level = zapcore.ErrorLevel
-	}
-
 	// Add colors in for console
 	config := zap.NewProductionEncoderConfig()
 	config.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
-	// Build a proper logger type
-	switch encoding {
-
-	case "console":
-		enc = zapcore.NewConsoleEncoder(config)
-
-	case "json":
-		enc = zapcore.NewJSONEncoder(config)
-
-	default:
-		enc = zapcore.NewConsoleEncoder(config)
-	}
-
 	return zapcore.NewCore(
-		enc,
+		getZapEncoder(encoding, config),
 		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
-		level,
+		GetZapLevel(verbosity),
 	)
 }
 
 // MakeBufferLogger - a multiroute logger, which supports JSON/Console stdout and writing to buffer
 func MakeBufferLogger(b *bytes.Buffer, verb, enc string) *zap.Logger {
 	return zap.New(newCustomLogger(b, verb, enc))
+}
+
+// GetZapLevel - returns a Zap logger verbosity level based on the input string
+func GetZapLevel(verb string) zapcore.Level {
+	var level zapcore.Level
+
+	switch verb {
+
+	case "debug":
+		level = zapcore.DebugLevel
+
+	case "error":
+		level = zapcore.ErrorLevel
+
+	case "warn":
+		level = zapcore.WarnLevel
+
+	case "info":
+		level = zapcore.InfoLevel
+
+	default:
+		level = zapcore.InfoLevel
+	}
+
+	return level
+}
+
+func getZapEncoder(encoder string, cfg zapcore.EncoderConfig) zapcore.Encoder {
+	var enc zapcore.Encoder
+
+	// Build a proper logger type
+	switch encoder {
+
+	case "console":
+		enc = zapcore.NewConsoleEncoder(cfg)
+
+	case "json":
+		enc = zapcore.NewJSONEncoder(cfg)
+
+	default:
+		enc = zapcore.NewConsoleEncoder(cfg)
+	}
+
+	return enc
 }
