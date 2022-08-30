@@ -15,12 +15,21 @@ func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 	var level zapcore.Level
 
 	switch verbosity {
+
 	case "debug":
 		level = zapcore.DebugLevel
+
+	case "error":
+		level = zapcore.ErrorLevel
+
 	case "warn":
 		level = zapcore.WarnLevel
+
+	case "info":
+		level = zapcore.InfoLevel
+
 	default:
-		level = zapcore.ErrorLevel
+		level = zapcore.InfoLevel
 	}
 
 	cfg := zap.Config{

@@ -43,7 +43,26 @@ type lokiConfig struct {
 	level         zapcore.Level
 }
 
-func MakeLokiConfig(enaLoki, enaConsole bool, url, ctype, service string, level zapcore.Level) lokiConfig {
+func MakeLokiConfig(enaLoki, enaConsole bool, url, ctype, service, verbosity string) lokiConfig {
+	var level zapcore.Level
+
+	switch verbosity {
+
+	case "debug":
+		level = zapcore.DebugLevel
+
+	case "error":
+		level = zapcore.ErrorLevel
+
+	case "warn":
+		level = zapcore.WarnLevel
+
+	case "info":
+		level = zapcore.InfoLevel
+
+	default:
+		level = zapcore.InfoLevel
+	}
 	return lokiConfig{
 		enableLoki:    enaLoki,
 		enableConsole: enaConsole,
