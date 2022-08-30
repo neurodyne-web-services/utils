@@ -21,9 +21,10 @@ func Test_loki(t *testing.T) {
 	lokiConn := MakeLogConnector(verbosity, true)
 
 	lokiConf := LokiConfig{
-		url:     url,
-		ctype:   ctype,
-		service: service,
+		Url:     url,
+		Ctype:   ctype,
+		Service: service,
+		Batch:   MakeBatchConfig(8, 30),
 	}
 
 	conf := MakeConfig(consConn, lokiConn, lokiConf)
@@ -34,8 +35,7 @@ func Test_loki(t *testing.T) {
 	zl, err := logger.MakeLogger("debug", "console")
 	assert.NoError(t, err)
 
-	batch := MakeBatchConfig(8, 30)
-	loki := MakeLokiLogger(conf, zl, batch)
+	loki := MakeLokiLogger(conf, zl)
 
 	loki.Warnf(job0, "My message is %s", "Hey There")
 	loki.Infof(job0, "Starting the test...")

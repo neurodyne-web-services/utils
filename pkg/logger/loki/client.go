@@ -1,8 +1,6 @@
 package loki
 
 import (
-	"time"
-
 	v1 "github.com/neurodyne-web-services/utils/pkg/logger/loki/genout/v1"
 )
 
@@ -29,18 +27,18 @@ type streamItem struct {
 	entry  *v1.Entry
 }
 
-type batchConfig struct {
-	BatchSize int
-	BatchWait time.Duration
+type BatchConfig struct {
+	BatchSize       int
+	BatchTimeoutSec int
 }
 
-func MakeBatchConfig(size int, wait time.Duration) batchConfig {
-	return batchConfig{size, wait}
+func MakeBatchConfig(size, timeout int) BatchConfig {
+	return BatchConfig{size, timeout}
 }
 
 type LogConnector struct {
-	enable    bool
-	verbosity string
+	Enable    bool
+	Verbosity string
 }
 
 func MakeLogConnector(verb string, ena bool) LogConnector {
@@ -48,9 +46,10 @@ func MakeLogConnector(verb string, ena bool) LogConnector {
 }
 
 type LokiConfig struct {
-	url     string
-	ctype   string
-	service string
+	Url     string
+	Ctype   string
+	Service string
+	Batch   BatchConfig
 }
 
 type config struct {
