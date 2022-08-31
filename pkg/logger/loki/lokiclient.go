@@ -18,8 +18,9 @@ import (
 )
 
 const (
+	MIN_ENTRIES = 2
 	MAX_ENTRIES = 8
-	timeout     = 3 // sec
+	timeout     = 5 // sec
 )
 
 type LokiLogger struct {
@@ -150,9 +151,8 @@ func (c *LokiLogger) push(labels string, entry *v1.Entry) {
 
 func (c *LokiLogger) run() {
 
-	batch := make(map[string]*v1.Entry)
-
 	maxWait := time.NewTimer(timeout * time.Second)
+	batch := make(map[string][]*v1.Entry, MIN_ENTRIES)
 
 	defer func() {
 		if len(batch) > 0 {
@@ -169,11 +169,11 @@ func (c *LokiLogger) run() {
 
 		case entry := <-c.entries:
 
-			batch[entry.labels] = entry.entry
+			batch[entry.labels] = append(batch[entry.labels], entry.entry)
 
 			if len(batch) >= c.conf.lcfg.Batch.BatchSize {
 				c.process(batch)
-				batch = make(map[string]*v1.Entry)
+				batch = make(map[string][]*v1.Entry, MIN_ENTRIES)
 				maxWait.Reset(timeout * time.Second)
 			}
 
@@ -181,21 +181,23 @@ func (c *LokiLogger) run() {
 
 			if len(batch) > 0 {
 				c.process(batch)
-				batch = make(map[string]*v1.Entry)
+				batch = make(map[string][]*v1.Entry, MIN_ENTRIES)
 			}
 			maxWait.Reset(timeout * time.Second)
 		}
 	}
 }
 
-func (c *LokiLogger) process(entries map[string]*v1.Entry) error {
+func (c *LokiLogger) process(entries map[string][]*v1.Entry) error {
 	var streams []*v1.Stream
 
-	for key, v := range entries {
-		streams = append(streams, &v1.Stream{
-			Labels: key,
-			Entry:  v,
-		})
+	for labels, arr := range entries {
+		for _, v := range arr {
+			streams = append(streams, &v1.Stream{
+				Labels: labels,
+				Entry:  v,
+			})
+		}
 	}
 
 	req := v1.PushRequest{
