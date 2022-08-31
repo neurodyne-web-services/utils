@@ -45,9 +45,11 @@ func Test_loki(t *testing.T) {
 	logger.Warn("bar")
 	logger.Info("baz")
 
-	for i := 0; i < 16; i++ {
+	for i := 0; i < 2; i++ {
 		logger.Debugf("My value is %d", i)
 	}
+
+	logger.Sync()
 
 	time.Sleep(2 * time.Second)
 }

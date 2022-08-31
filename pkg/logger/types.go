@@ -17,24 +17,9 @@ type serverResp struct {
 
 type zapMsg struct {
 	Level   string
-	Time    time.Time
+	Caller  string
 	Message string
-}
-
-type LokiConfig struct {
-	Url     string
-	Ctype   string
-	Service string
-	Batch   BatchConfig
-}
-
-func MakeLokiConfig(url, ctype, service string, batchSize int8) LokiConfig {
-	return LokiConfig{
-		Url:     url,
-		Ctype:   ctype,
-		Service: service,
-		Batch:   BatchConfig{BatchSize: batchSize},
-	}
+	Time    time.Time
 }
 
 type streamItem struct {
@@ -42,6 +27,18 @@ type streamItem struct {
 	entry  *v1.Entry
 }
 
-type BatchConfig struct {
-	BatchSize int8
+type LokiConfig struct {
+	Url       string
+	Ctype     string
+	Service   string
+	BatchSize int
+}
+
+func MakeLokiConfig(url, ctype, service string, batchSize int) LokiConfig {
+	return LokiConfig{
+		Url:       url,
+		Ctype:     ctype,
+		Service:   service,
+		BatchSize: batchSize,
+	}
 }

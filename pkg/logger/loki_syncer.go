@@ -18,19 +18,15 @@ type LokiSyncer struct {
 	conf LokiConfig
 	http http.Client
 
-	streams      []*v1.Stream
-	entries      map[string][]*v1.Entry
-	totalEntries int8
+	streams []*v1.Stream
+	entries map[string][]*v1.Entry
 }
 
 func MakeLokiSyncer(conf LokiConfig) *LokiSyncer {
-
-	client := LokiSyncer{
+	return &LokiSyncer{
 		conf:    conf,
-		entries: make(map[string][]*v1.Entry),
+		entries: make(map[string][]*v1.Entry, MIN_ENTRIES),
 	}
-
-	return &client
 }
 
 func (l LokiSyncer) Write(p []byte) (n int, err error) {
@@ -42,16 +38,17 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 		return 0, err
 	}
 
-	l.process(streamItem{
-		labels: buildLabels(l.conf.Service, "test-job"),
-		entry:  makeEntry(msg.Level, msg.Message),
+	err = l.process(streamItem{
+		labels: buildLabels(l.conf.Service, "myJOB"),
+		entry:  makeEntry(msg.Level, msg.Caller, msg.Message),
 	})
 
-	return 0, nil
+	return 0, err
 }
 
 func (l *LokiSyncer) Sync() error {
 	fmt.Println(">>>> Loki Sync Started")
+	fmt.Printf("Entries size: %d, streams size:%d \n", len(l.entries), len(l.streams))
 	return l.procStreams()
 }
 
@@ -59,10 +56,9 @@ func (l *LokiSyncer) process(item streamItem) error {
 
 	if item.entry != nil {
 		l.entries[item.labels] = append(l.entries[item.labels], item.entry)
-		l.totalEntries++
 	}
 
-	if l.totalEntries >= l.conf.Batch.BatchSize {
+	if len(l.entries[item.labels]) >= l.conf.BatchSize {
 
 		for labels, arr := range l.entries {
 			for _, v := range arr {
@@ -72,6 +68,7 @@ func (l *LokiSyncer) process(item streamItem) error {
 				})
 			}
 		}
+		l.entries = make(map[string][]*v1.Entry, MIN_ENTRIES)
 		return l.procStreams()
 	}
 	return nil
@@ -97,6 +94,8 @@ func (l *LokiSyncer) procStreams() error {
 	if resp.code != 204 {
 		return fmt.Errorf("invalid response code: %d", resp.code)
 	}
+
+	l.streams = make([]*v1.Stream, MIN_ENTRIES)
 
 	return nil
 }
@@ -130,13 +129,14 @@ func buildLabels(service, job string) string {
 	return "{service=\"" + service + "\",job=\"" + job + "\"}"
 }
 
-func makeEntry(level, msg string) *v1.Entry {
+func makeEntry(level, caller, msg string) *v1.Entry {
 	now := time.Now().UnixNano()
 	return &v1.Entry{
 		Timestamp: &timestamppb.Timestamp{
 			Seconds: now / int64(time.Second),
 			Nanos:   int32(now % int64(time.Second)),
 		},
-		Line: fmt.Sprintf(level, msg),
+		// Line: fmt.Sprintf(level, msg),
+		Line: level + ": " + caller + " " + msg,
 	}
 }

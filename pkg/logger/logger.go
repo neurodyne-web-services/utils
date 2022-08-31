@@ -70,13 +70,13 @@ func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core 
 // MakeBufferLogger - a multiroute logger, which supports
 // JSON/Console stdout and writing to buffer
 func MakeBufferLogger(b *bytes.Buffer, verb, enc string) *zap.Logger {
-	return zap.New(newCustomLogger(b, verb, enc))
+	return zap.New(newCustomLogger(b, verb, enc), zap.AddCaller())
 }
 
 // MakeExtLogger - a multiroute logger, which uses console
 // and an external logger thru the Writer interface
 func MakeExtLogger(w io.Writer, verb, enc string) *zap.Logger {
-	return zap.New(newCustomLogger(w, verb, enc))
+	return zap.New(newCustomLogger(w, verb, enc), zap.AddCaller())
 }
 
 // GetZapLevel - returns a Zap logger verbosity level based
@@ -88,6 +88,9 @@ func GetZapLevel(verb string) zapcore.Level {
 
 	case "debug":
 		level = zapcore.DebugLevel
+
+	case "fatal":
+		level = zapcore.FatalLevel
 
 	case "error":
 		level = zapcore.ErrorLevel
