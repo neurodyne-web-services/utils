@@ -24,7 +24,7 @@ const (
 type LokiLogger struct {
 	Client
 
-	conf      config
+	conf      LogConfig
 	http      http.Client
 	zl        *zap.SugaredLogger
 	entries   chan streamItem
@@ -33,16 +33,16 @@ type LokiLogger struct {
 }
 
 // MakeLokiLogger - factory for Loki client
-func MakeLokiLogger(conf config, zl *zap.Logger) *LokiLogger {
+func MakeLokiLogger(conf LogConfig, zl *zap.Logger) *LokiLogger {
 
 	client := LokiLogger{
 		conf:    conf,
 		zl:      zl.Sugar(),
 		done:    make(chan struct{}),
-		entries: make(chan streamItem, conf.lcfg.Batch.BatchSize),
+		entries: make(chan streamItem, conf.LokiConf.Batch.BatchSize),
 	}
 
-	if conf.loki.Enable {
+	if conf.Loki.Enable {
 		client.waitGroup.Add(1)
 		go client.run()
 	}
@@ -52,89 +52,101 @@ func MakeLokiLogger(conf config, zl *zap.Logger) *LokiLogger {
 
 func (c *LokiLogger) Debug(job string, args ...interface{}) {
 
-	if c.conf.console.Enable {
+	if c.conf.Loki.Enable {
 		c.zl.Debug(args...)
 	}
 
-	if c.conf.loki.Enable && zapcore.DebugLevel >= logger.GetZapLevel(c.conf.loki.Level) {
-		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry("", "Debug: ", args...))
+	if c.conf.Loki.Enable && zapcore.DebugLevel >= logger.GetZapLevel(c.conf.Loki.Level) {
+		c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry("", "Debug: ", args...))
 	}
+}
+
+func (c *LokiLogger) Fatal(job string, args ...interface{}) {
+
+	c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry("", "Fatal: ", args...))
+	c.zl.Fatal(args...)
 }
 
 func (c *LokiLogger) Error(job string, args ...interface{}) {
 
-	if c.conf.console.Enable {
+	if c.conf.Loki.Enable {
 		c.zl.Error(args...)
 	}
 
-	if c.conf.loki.Enable && zapcore.ErrorLevel >= logger.GetZapLevel(c.conf.loki.Level) {
-		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry("", "Error: ", args...))
+	if c.conf.Loki.Enable && zapcore.ErrorLevel >= logger.GetZapLevel(c.conf.Loki.Level) {
+		c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry("", "Error: ", args...))
 	}
 }
 
 func (c *LokiLogger) Warn(job string, args ...interface{}) {
 
-	if c.conf.console.Enable {
+	if c.conf.Loki.Enable {
 		c.zl.Warn(args...)
 	}
 
-	if c.conf.loki.Enable && zapcore.WarnLevel >= logger.GetZapLevel(c.conf.loki.Level) {
-		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry("", "Warn: ", args...))
+	if c.conf.Loki.Enable && zapcore.WarnLevel >= logger.GetZapLevel(c.conf.Loki.Level) {
+		c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry("", "Warn: ", args...))
 	}
 }
 
 func (c *LokiLogger) Info(job string, args ...interface{}) {
 
-	if c.conf.console.Enable {
+	if c.conf.Loki.Enable {
 		c.zl.Info(args...)
 	}
 
-	if c.conf.loki.Enable && zapcore.InfoLevel >= logger.GetZapLevel(c.conf.loki.Level) {
-		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry("", "Info: ", args...))
+	if c.conf.Loki.Enable && zapcore.InfoLevel >= logger.GetZapLevel(c.conf.Loki.Level) {
+		c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry("", "Info: ", args...))
 	}
 }
 
 func (c *LokiLogger) Debugf(job, template string, args ...interface{}) {
 
-	if c.conf.console.Enable {
+	if c.conf.Loki.Enable {
 		c.zl.Debugf(template, args...)
 	}
 
-	if c.conf.loki.Enable && zapcore.DebugLevel >= logger.GetZapLevel(c.conf.loki.Level) {
-		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry(template, "Debug: ", args...))
+	if c.conf.Loki.Enable && zapcore.DebugLevel >= logger.GetZapLevel(c.conf.Loki.Level) {
+		c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry(template, "Debug: ", args...))
 	}
+}
+
+func (c *LokiLogger) Fatalf(job, template string, args ...interface{}) {
+
+	c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry(template, "Fatal: ", args...))
+	c.zl.Fatalf(template, args...)
 }
 
 func (c *LokiLogger) Errorf(job, template string, args ...interface{}) {
 
-	if c.conf.console.Enable {
+	if c.conf.Loki.Enable {
 		c.zl.Errorf(template, args...)
 	}
 
-	if c.conf.loki.Enable && zapcore.ErrorLevel >= logger.GetZapLevel(c.conf.loki.Level) {
-		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry(template, "Error: ", args...))
+	if c.conf.Loki.Enable && zapcore.ErrorLevel >= logger.GetZapLevel(c.conf.Loki.Level) {
+		c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry(template, "Error: ", args...))
 	}
 }
 
 func (c *LokiLogger) Warnf(job, template string, args ...interface{}) {
 
-	if c.conf.console.Enable {
+	if c.conf.Loki.Enable {
 		c.zl.Warnf(template, args...)
 	}
 
-	if c.conf.loki.Enable && zapcore.WarnLevel >= logger.GetZapLevel(c.conf.loki.Level) {
-		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry(template, "Warn: ", args...))
+	if c.conf.Loki.Enable && zapcore.WarnLevel >= logger.GetZapLevel(c.conf.Loki.Level) {
+		c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry(template, "Warn: ", args...))
 	}
 }
 
 func (c *LokiLogger) Infof(job, template string, args ...interface{}) {
 
-	if c.conf.console.Enable {
+	if c.conf.Loki.Enable {
 		c.zl.Infof(template, args...)
 	}
 
-	if c.conf.loki.Enable && zapcore.InfoLevel >= logger.GetZapLevel(c.conf.loki.Level) {
-		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry(template, "Info: ", args...))
+	if c.conf.Loki.Enable && zapcore.InfoLevel >= logger.GetZapLevel(c.conf.Loki.Level) {
+		c.push(buildLabels(c.conf.LokiConf.Service, job), makeEntry(template, "Info: ", args...))
 	}
 }
 
@@ -147,7 +159,7 @@ func (c *LokiLogger) push(labels string, entry *v1.Entry) {
 
 func (c *LokiLogger) run() {
 
-	maxWait := time.NewTimer(time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec) * time.Second)
+	maxWait := time.NewTimer(time.Duration(c.conf.LokiConf.Batch.BatchTimeoutSec) * time.Second)
 	batch := make(map[string][]*v1.Entry, MIN_ENTRIES)
 
 	defer func() {
@@ -167,10 +179,10 @@ func (c *LokiLogger) run() {
 
 			batch[entry.labels] = append(batch[entry.labels], entry.entry)
 
-			if len(batch) >= c.conf.lcfg.Batch.BatchSize {
+			if len(batch) >= c.conf.LokiConf.Batch.BatchSize {
 				c.process(batch)
 				batch = make(map[string][]*v1.Entry, MIN_ENTRIES)
-				maxWait.Reset(time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec) * time.Second)
+				maxWait.Reset(time.Duration(c.conf.LokiConf.Batch.BatchTimeoutSec) * time.Second)
 			}
 
 		case <-maxWait.C:
@@ -179,7 +191,7 @@ func (c *LokiLogger) run() {
 				c.process(batch)
 				batch = make(map[string][]*v1.Entry, MIN_ENTRIES)
 			}
-			maxWait.Reset(time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec) * time.Second)
+			maxWait.Reset(time.Duration(c.conf.LokiConf.Batch.BatchTimeoutSec) * time.Second)
 		}
 	}
 }
@@ -222,12 +234,12 @@ func (c *LokiLogger) process(entries map[string][]*v1.Entry) error {
 func (c *LokiLogger) send(buff *bytes.Buffer) (serverResp, error) {
 	var out = serverResp{}
 
-	req, err := http.NewRequest("POST", c.conf.lcfg.Url, buff)
+	req, err := http.NewRequest("POST", c.conf.LokiConf.Url, buff)
 	if err != nil {
 		return out, err
 	}
 
-	req.Header.Set("Content-Type", c.conf.lcfg.Ctype)
+	req.Header.Set("Content-Type", c.conf.LokiConf.Ctype)
 
 	resp, err := c.http.Do(req)
 	if err != nil {

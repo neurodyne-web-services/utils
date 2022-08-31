@@ -9,11 +9,13 @@ type Client interface {
 	Info(job string, args ...interface{})
 	Warn(job string, args ...interface{})
 	Error(job string, args ...interface{})
+	Fatal(job string, args ...interface{})
 
 	Debugf(job, template string, args ...interface{})
 	Infof(job, template string, args ...interface{})
 	Warnf(job, template string, args ...interface{})
 	Errorf(job, template string, args ...interface{})
+	Fatalf(job, template string, args ...interface{})
 	Shutdown()
 }
 
@@ -52,16 +54,16 @@ type LokiConfig struct {
 	Batch   BatchConfig
 }
 
-type config struct {
-	console LogConnector
-	loki    LogConnector
-	lcfg    LokiConfig
+type LogConfig struct {
+	Console  LogConnector
+	Loki     LogConnector
+	LokiConf LokiConfig
 }
 
-func MakeConfig(cons, loki LogConnector, lcfg LokiConfig) config {
-	return config{
-		console: cons,
-		loki:    loki,
-		lcfg:    lcfg,
+func MakeConfig(cons, loki LogConnector, lcfg LokiConfig) LogConfig {
+	return LogConfig{
+		Console:  cons,
+		Loki:     loki,
+		LokiConf: lcfg,
 	}
 }
