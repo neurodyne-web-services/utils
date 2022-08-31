@@ -4,8 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
+)
 
-	"go.uber.org/zap"
+const (
+	url       = "http://localhost:3100/api/prom/push"
+	ctype     = "application/x-protobuf"
+	service   = "drevo"
+	verbosity = "debug"
 )
 
 func Test_buff(t *testing.T) {
@@ -24,33 +30,24 @@ func Test_buff(t *testing.T) {
 
 func Test_loki(t *testing.T) {
 
-	loki := dummyLogger{}
+	batch := MakeBatchConfig(8, 3)
+	conf := MakeLokiConfig(url, ctype, service, batch)
+
+	loki := MakeLokiSyncer(conf)
 	defer loki.Sync()
 
-	logger := MakeExtLogger(loki, "debug", "console")
+	zl := MakeExtLogger(loki, "debug", "json")
+	logger := zl.Sugar()
 
-	fmt.Println("Raw log:")
 	logger.Error("foo")
-	logger.Debug("My number is ", zap.Int("Number", 4))
+	// logger.Debugf("My number is ", zap.Int("Number", 4))
+	logger.Debugf("My Number is %d", 4)
 	logger.Warn("bar")
 	logger.Info("baz")
-}
 
-var items []string
-
-// A dummy logger, which implements a zap.WriteSyncer interface
-type dummyLogger struct{}
-
-func (l dummyLogger) Write(p []byte) (n int, err error) {
-	// fmt.Printf(">>>> Loki logger: %s \n", string(p))
-	if p != nil {
-		items = append(items, string(p))
+	for i := 0; i < 16; i++ {
+		logger.Debugf("My value is %d", i)
 	}
 
-	return 0, nil
-}
-
-func (l dummyLogger) Sync() error {
-	fmt.Printf(">>>> SYNC: items size: %d", len(items))
-	return nil
+	time.Sleep(2 * time.Second)
 }
