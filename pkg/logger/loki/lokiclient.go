@@ -19,6 +19,7 @@ import (
 
 const (
 	MAX_ENTRIES = 8
+	timeout     = 3 // sec
 )
 
 type LokiLogger struct {
@@ -151,11 +152,10 @@ func (c *LokiLogger) run() {
 
 	batch := make(map[string]*v1.Entry)
 
-	batchSize := 0
-	maxWait := time.NewTimer((time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec)) * time.Second)
+	maxWait := time.NewTimer(timeout * time.Second)
 
 	defer func() {
-		if batchSize > 0 {
+		if len(batch) > 0 {
 			c.process(batch)
 		}
 		c.waitGroup.Done()
@@ -165,31 +165,25 @@ func (c *LokiLogger) run() {
 		select {
 
 		case <-c.done:
-			if batchSize > 0 {
-				c.process(batch)
-			}
 			return
 
 		case entry := <-c.entries:
 
 			batch[entry.labels] = entry.entry
-			batchSize++
 
-			if batchSize >= c.conf.lcfg.Batch.BatchSize {
+			if len(batch) >= c.conf.lcfg.Batch.BatchSize {
 				c.process(batch)
 				batch = make(map[string]*v1.Entry)
-				batchSize = 0
-				maxWait.Reset((time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec)) * time.Second)
+				maxWait.Reset(timeout * time.Second)
 			}
 
 		case <-maxWait.C:
 
-			if batchSize > 0 {
+			if len(batch) > 0 {
 				c.process(batch)
 				batch = make(map[string]*v1.Entry)
-				batchSize = 0
 			}
-			maxWait.Reset((time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec)) * time.Second)
+			maxWait.Reset(timeout * time.Second)
 		}
 	}
 }
