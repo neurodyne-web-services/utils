@@ -38,12 +38,30 @@ func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 
 func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core {
 
+	level := GetZapLevel(verbosity)
+
 	// Add colors in for console
-	config := zap.NewProductionEncoderConfig()
-	config.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	config := zap.Config{
+		Encoding:         encoding,
+		Level:            zap.NewAtomicLevelAt(level),
+		OutputPaths:      []string{"stderr"},
+		ErrorOutputPaths: []string{"stderr"},
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey: "message",
+
+			LevelKey:    "level",
+			EncodeLevel: zapcore.CapitalColorLevelEncoder,
+
+			TimeKey:    "time",
+			EncodeTime: zapcore.RFC3339TimeEncoder,
+
+			CallerKey:    "caller",
+			EncodeCaller: zapcore.ShortCallerEncoder,
+		},
+	}
 
 	return zapcore.NewCore(
-		getZapEncoder(encoding, config),
+		getZapEncoder(encoding, config.EncoderConfig),
 		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
 		GetZapLevel(verbosity),
 	)
