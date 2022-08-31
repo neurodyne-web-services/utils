@@ -19,8 +19,6 @@ import (
 
 const (
 	MIN_ENTRIES = 2
-	MAX_ENTRIES = 8
-	timeout     = 5 // sec
 )
 
 type LokiLogger struct {
@@ -41,7 +39,7 @@ func MakeLokiLogger(conf config, zl *zap.Logger) *LokiLogger {
 		conf:    conf,
 		zl:      zl.Sugar(),
 		done:    make(chan struct{}),
-		entries: make(chan streamItem, MAX_ENTRIES),
+		entries: make(chan streamItem, conf.lcfg.Batch.BatchSize),
 	}
 
 	if conf.loki.Enable {
@@ -149,7 +147,7 @@ func (c *LokiLogger) push(labels string, entry *v1.Entry) {
 
 func (c *LokiLogger) run() {
 
-	maxWait := time.NewTimer(timeout * time.Second)
+	maxWait := time.NewTimer(time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec) * time.Second)
 	batch := make(map[string][]*v1.Entry, MIN_ENTRIES)
 
 	defer func() {
@@ -172,7 +170,7 @@ func (c *LokiLogger) run() {
 			if len(batch) >= c.conf.lcfg.Batch.BatchSize {
 				c.process(batch)
 				batch = make(map[string][]*v1.Entry, MIN_ENTRIES)
-				maxWait.Reset(timeout * time.Second)
+				maxWait.Reset(time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec) * time.Second)
 			}
 
 		case <-maxWait.C:
@@ -181,7 +179,7 @@ func (c *LokiLogger) run() {
 				c.process(batch)
 				batch = make(map[string][]*v1.Entry, MIN_ENTRIES)
 			}
-			maxWait.Reset(timeout * time.Second)
+			maxWait.Reset(time.Duration(c.conf.lcfg.Batch.BatchTimeoutSec) * time.Second)
 		}
 	}
 }
