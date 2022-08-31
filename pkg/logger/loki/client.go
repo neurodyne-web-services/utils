@@ -37,8 +37,8 @@ func MakeBatchConfig(size, timeout int) BatchConfig {
 }
 
 type LogConnector struct {
-	Enable    bool
-	Verbosity string
+	Enable bool
+	Level  string
 }
 
 func MakeLogConnector(verb string, ena bool) LogConnector {

@@ -29,7 +29,6 @@ type LokiLogger struct {
 	conf      config
 	http      http.Client
 	zl        *zap.SugaredLogger
-	level     zapcore.Level
 	entries   chan streamItem
 	done      chan struct{}
 	waitGroup sync.WaitGroup
@@ -43,7 +42,6 @@ func MakeLokiLogger(conf config, zl *zap.Logger) *LokiLogger {
 		zl:      zl.Sugar(),
 		done:    make(chan struct{}),
 		entries: make(chan streamItem, MAX_ENTRIES),
-		level:   logger.GetZapLevel(conf.loki.Verbosity),
 	}
 
 	if conf.loki.Enable {
@@ -60,7 +58,7 @@ func (c *LokiLogger) Debug(job string, args ...interface{}) {
 		c.zl.Debug(args...)
 	}
 
-	if c.conf.loki.Enable && logger.GetZapLevel(c.conf.loki.Verbosity) <= c.level {
+	if c.conf.loki.Enable && zapcore.DebugLevel >= logger.GetZapLevel(c.conf.loki.Level) {
 		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry("", "Debug: ", args...))
 	}
 }
@@ -71,7 +69,7 @@ func (c *LokiLogger) Error(job string, args ...interface{}) {
 		c.zl.Error(args...)
 	}
 
-	if c.conf.loki.Enable && logger.GetZapLevel(c.conf.loki.Verbosity) <= c.level {
+	if c.conf.loki.Enable && zapcore.ErrorLevel >= logger.GetZapLevel(c.conf.loki.Level) {
 		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry("", "Error: ", args...))
 	}
 }
@@ -82,7 +80,7 @@ func (c *LokiLogger) Warn(job string, args ...interface{}) {
 		c.zl.Warn(args...)
 	}
 
-	if c.conf.loki.Enable && logger.GetZapLevel(c.conf.loki.Verbosity) <= c.level {
+	if c.conf.loki.Enable && zapcore.WarnLevel >= logger.GetZapLevel(c.conf.loki.Level) {
 		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry("", "Warn: ", args...))
 	}
 }
@@ -93,7 +91,7 @@ func (c *LokiLogger) Info(job string, args ...interface{}) {
 		c.zl.Info(args...)
 	}
 
-	if c.conf.loki.Enable && logger.GetZapLevel(c.conf.loki.Verbosity) <= c.level {
+	if c.conf.loki.Enable && zapcore.InfoLevel >= logger.GetZapLevel(c.conf.loki.Level) {
 		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry("", "Info: ", args...))
 	}
 }
@@ -104,7 +102,7 @@ func (c *LokiLogger) Debugf(job, template string, args ...interface{}) {
 		c.zl.Debugf(template, args...)
 	}
 
-	if c.conf.loki.Enable && logger.GetZapLevel(c.conf.loki.Verbosity) <= c.level {
+	if c.conf.loki.Enable && zapcore.DebugLevel >= logger.GetZapLevel(c.conf.loki.Level) {
 		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry(template, "Debug: ", args...))
 	}
 }
@@ -115,7 +113,7 @@ func (c *LokiLogger) Errorf(job, template string, args ...interface{}) {
 		c.zl.Errorf(template, args...)
 	}
 
-	if c.conf.loki.Enable && logger.GetZapLevel(c.conf.loki.Verbosity) <= c.level {
+	if c.conf.loki.Enable && zapcore.ErrorLevel >= logger.GetZapLevel(c.conf.loki.Level) {
 		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry(template, "Error: ", args...))
 	}
 }
@@ -126,7 +124,7 @@ func (c *LokiLogger) Warnf(job, template string, args ...interface{}) {
 		c.zl.Warnf(template, args...)
 	}
 
-	if c.conf.loki.Enable && logger.GetZapLevel(c.conf.loki.Verbosity) <= c.level {
+	if c.conf.loki.Enable && zapcore.WarnLevel >= logger.GetZapLevel(c.conf.loki.Level) {
 		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry(template, "Warn: ", args...))
 	}
 }
@@ -137,7 +135,7 @@ func (c *LokiLogger) Infof(job, template string, args ...interface{}) {
 		c.zl.Infof(template, args...)
 	}
 
-	if c.conf.loki.Enable && logger.GetZapLevel(c.conf.loki.Verbosity) <= c.level {
+	if c.conf.loki.Enable && zapcore.InfoLevel >= logger.GetZapLevel(c.conf.loki.Level) {
 		c.push(buildLabels(c.conf.lcfg.Service, job), makeEntry(template, "Info: ", args...))
 	}
 }
