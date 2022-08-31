@@ -12,6 +12,7 @@ const (
 	ctype     = "application/x-protobuf"
 	service   = "drevo"
 	verbosity = "debug"
+	batchSize = 4
 )
 
 func Test_buff(t *testing.T) {
@@ -30,8 +31,7 @@ func Test_buff(t *testing.T) {
 
 func Test_loki(t *testing.T) {
 
-	batch := MakeBatchConfig(8, 3)
-	conf := MakeLokiConfig(url, ctype, service, batch)
+	conf := MakeLokiConfig(url, ctype, service, batchSize)
 
 	loki := MakeLokiSyncer(conf)
 	defer loki.Sync()

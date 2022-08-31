@@ -14,67 +14,21 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const (
-	MIN_ENTRIES = 2
-)
-
-type serverResp struct {
-	code int
-	body []byte
-}
-
-type zapMsg struct {
-	Level   string
-	Time    time.Time
-	Message string
-}
-
-type LokiConfig struct {
-	Url     string
-	Ctype   string
-	Service string
-	Batch   BatchConfig
-}
-
-func MakeLokiConfig(url, ctype, service string, batch BatchConfig) LokiConfig {
-	return LokiConfig{
-		Url:     url,
-		Ctype:   ctype,
-		Service: service,
-		Batch:   batch,
-	}
-}
-
-type streamItem struct {
-	labels string
-	entry  *v1.Entry
-}
-
-type BatchConfig struct {
-	BatchSize       int
-	BatchTimeoutSec int
-}
-
-func MakeBatchConfig(size, timeout int) BatchConfig {
-	return BatchConfig{size, timeout}
-}
-
 type LokiSyncer struct {
-	conf    LokiConfig
-	http    http.Client
-	entries chan streamItem
-	done    chan struct{}
+	conf LokiConfig
+	http http.Client
+
+	streams      []*v1.Stream
+	entries      map[string][]*v1.Entry
+	totalEntries int8
 }
 
 func MakeLokiSyncer(conf LokiConfig) *LokiSyncer {
 
 	client := LokiSyncer{
 		conf:    conf,
-		done:    make(chan struct{}),
-		entries: make(chan streamItem, conf.Batch.BatchSize),
+		entries: make(map[string][]*v1.Entry),
 	}
-
-	go client.run()
 
 	return &client
 }
@@ -88,94 +42,44 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 		return 0, err
 	}
 
-	// fmt.Printf("Decoded level: %s, ts: %v, message: %s \n", msg.Level, msg.Time, msg.Message)
-	// entry := makeEntry(msg.Level, msg.Message)
-	// fmt.Printf("Entry: %v \n", entry)
-
-	l.push(buildLabels(l.conf.Service, "test-job"), makeEntry(msg.Level, msg.Message))
+	l.process(streamItem{
+		labels: buildLabels(l.conf.Service, "test-job"),
+		entry:  makeEntry(msg.Level, msg.Message),
+	})
 
 	return 0, nil
 }
 
 func (l *LokiSyncer) Sync() error {
-	fmt.Println(">>>> Loki Sync")
+	fmt.Println(">>>> Loki Sync Started")
+	return l.procStreams()
+}
+
+func (l *LokiSyncer) process(item streamItem) error {
+
+	if item.entry != nil {
+		l.entries[item.labels] = append(l.entries[item.labels], item.entry)
+		l.totalEntries++
+	}
+
+	if l.totalEntries >= l.conf.Batch.BatchSize {
+
+		for labels, arr := range l.entries {
+			for _, v := range arr {
+				l.streams = append(l.streams, &v1.Stream{
+					Labels: labels,
+					Entry:  v,
+				})
+			}
+		}
+		return l.procStreams()
+	}
 	return nil
 }
 
-func makeEntry(level, msg string) *v1.Entry {
-	now := time.Now().UnixNano()
-	return &v1.Entry{
-		Timestamp: &timestamppb.Timestamp{
-			Seconds: now / int64(time.Second),
-			Nanos:   int32(now % int64(time.Second)),
-		},
-		Line: fmt.Sprintf(level, msg),
-	}
-}
-
-func buildLabels(service, job string) string {
-	return "{service=\"" + service + "\",job=\"" + job + "\"}"
-}
-
-func (c *LokiSyncer) push(labels string, entry *v1.Entry) {
-	c.entries <- streamItem{
-		labels: labels,
-		entry:  entry,
-	}
-}
-
-func (c *LokiSyncer) run() {
-
-	maxWait := time.NewTimer(time.Duration(c.conf.Batch.BatchTimeoutSec) * time.Second)
-	batch := make(map[string][]*v1.Entry, MIN_ENTRIES)
-
-	defer func() {
-		if len(batch) > 0 {
-			c.process(batch)
-		}
-	}()
-
-	for {
-		select {
-
-		case <-c.done:
-			return
-
-		case entry := <-c.entries:
-
-			batch[entry.labels] = append(batch[entry.labels], entry.entry)
-
-			if len(batch) >= c.conf.Batch.BatchSize {
-				c.process(batch)
-				batch = make(map[string][]*v1.Entry, MIN_ENTRIES)
-				maxWait.Reset(time.Duration(c.conf.Batch.BatchTimeoutSec) * time.Second)
-			}
-
-		case <-maxWait.C:
-
-			if len(batch) > 0 {
-				c.process(batch)
-				batch = make(map[string][]*v1.Entry, MIN_ENTRIES)
-			}
-			maxWait.Reset(time.Duration(c.conf.Batch.BatchTimeoutSec) * time.Second)
-		}
-	}
-}
-
-func (c *LokiSyncer) process(entries map[string][]*v1.Entry) error {
-	var streams []*v1.Stream
-
-	for labels, arr := range entries {
-		for _, v := range arr {
-			streams = append(streams, &v1.Stream{
-				Labels: labels,
-				Entry:  v,
-			})
-		}
-	}
-
+func (l *LokiSyncer) procStreams() error {
 	req := v1.PushRequest{
-		Streams: streams,
+		Streams: l.streams,
 	}
 
 	pbuf, err := proto.Marshal(&req)
@@ -185,7 +89,7 @@ func (c *LokiSyncer) process(entries map[string][]*v1.Entry) error {
 
 	buf := snappy.Encode(nil, pbuf)
 
-	resp, err := c.send(bytes.NewBuffer(buf))
+	resp, err := l.send(bytes.NewBuffer(buf))
 	if err != nil {
 		return err
 	}
@@ -197,17 +101,17 @@ func (c *LokiSyncer) process(entries map[string][]*v1.Entry) error {
 	return nil
 }
 
-func (c *LokiSyncer) send(buff *bytes.Buffer) (serverResp, error) {
+func (l *LokiSyncer) send(buff *bytes.Buffer) (serverResp, error) {
 	var out = serverResp{}
 
-	req, err := http.NewRequest("POST", c.conf.Url, buff)
+	req, err := http.NewRequest("POST", l.conf.Url, buff)
 	if err != nil {
 		return out, err
 	}
 
-	req.Header.Set("Content-Type", c.conf.Ctype)
+	req.Header.Set("Content-Type", l.conf.Ctype)
 
-	resp, err := c.http.Do(req)
+	resp, err := l.http.Do(req)
 	if err != nil {
 		return out, err
 	}
@@ -222,6 +126,17 @@ func (c *LokiSyncer) send(buff *bytes.Buffer) (serverResp, error) {
 	return out, nil
 }
 
-func (c *LokiSyncer) Shutdown() {
-	close(c.done)
+func buildLabels(service, job string) string {
+	return "{service=\"" + service + "\",job=\"" + job + "\"}"
+}
+
+func makeEntry(level, msg string) *v1.Entry {
+	now := time.Now().UnixNano()
+	return &v1.Entry{
+		Timestamp: &timestamppb.Timestamp{
+			Seconds: now / int64(time.Second),
+			Nanos:   int32(now % int64(time.Second)),
+		},
+		Line: fmt.Sprintf(level, msg),
+	}
 }
