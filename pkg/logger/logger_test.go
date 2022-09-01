@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/neurodyne-web-services/utils/pkg/random"
 )
 
 const (
@@ -20,18 +22,18 @@ func Test_buff(t *testing.T) {
 
 	b := &bytes.Buffer{}
 
-	logger := MakeBufferLogger(b, "debug", "json")
+	logger := MakeExtLogger(b, "debug", "console")
 
-	fmt.Println("Raw log:")
+	fmt.Println(" >>>>> Raw log:")
 	logger.Error("foo")
 	logger.Error("bar")
 
-	fmt.Printf("Bufferred log: \n%s", b.String())
+	fmt.Printf(">>>>> Bufferred log: \n%s", b.String())
 }
 
-func Test_loki(t *testing.T) {
+func Test_zap(t *testing.T) {
 
-	conf := MakeLokiConfig(url, ctype, service, batchSize)
+	conf := MakeLokiConfig(true, url, ctype, service, batchSize)
 
 	loki := MakeLokiSyncer(conf)
 	defer loki.Sync()
@@ -40,15 +42,11 @@ func Test_loki(t *testing.T) {
 	logger := zl.Sugar()
 
 	logger.Info("baz")
-	logger.Debugf("My Number is %d", 4)
-	logger.Warn("bar")
-	logger.Error("foo")
+	logger.Debugw(fmt.Sprintf("Hello, %s", "Boris"),
+		"job", random.GenRandomName("job"))
 
-	for i := 0; i < 4; i++ {
-		logger.Warnf("My WARN value is %d", i)
-		logger.Debugf("My Debug value is %d", i)
-	}
+	logger.Warnw("My warn", "job", random.GenRandomName("job"))
+	logger.Error("My error")
 
-	logger.Info("Done !")
 	time.Sleep(time.Second)
 }

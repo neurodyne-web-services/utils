@@ -10,7 +10,6 @@ import (
 
 	"github.com/golang/snappy"
 	v1 "github.com/neurodyne-web-services/utils/pkg/logger/loki/genout/v1"
-	"github.com/neurodyne-web-services/utils/pkg/random"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -35,26 +34,29 @@ var labels string
 
 func (l LokiSyncer) Write(p []byte) (n int, err error) {
 
-	var msg zapMsg
+	if l.conf.Enable {
 
-	err = json.Unmarshal(p, &msg)
-	if err != nil {
-		return 0, err
-	}
+		var msg zapMsg
 
-	labels = buildLabels(l.conf.Service, random.GenRandomName("job"))
-	l.entries[labels] = append(l.entries[labels], makeEntry(msg.Level, msg.Caller, msg.Message))
-
-	// buildStreams a batch
-	if len(l.entries[labels]) >= l.conf.BatchSize {
-		if err = l.buildStreams(); err != nil {
+		err = json.Unmarshal(p, &msg)
+		if err != nil {
 			return 0, err
 		}
-	}
 
-	if len(l.streams) > 0 {
-		if err = l.procStreams(); err != nil {
-			return 0, err
+		labels = buildLabels(l.conf.Service, msg.Job)
+		l.entries[labels] = append(l.entries[labels], makeEntry(msg.Level, msg.Caller, msg.Message))
+
+		// buildStreams a batch
+		if len(l.entries[labels]) >= l.conf.BatchSize {
+			if err = l.buildStreams(); err != nil {
+				return 0, err
+			}
+		}
+
+		if len(l.streams) > 0 {
+			if err = l.procStreams(); err != nil {
+				return 0, err
+			}
 		}
 	}
 

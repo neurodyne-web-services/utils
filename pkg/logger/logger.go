@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"bytes"
 	"io"
 	"os"
 
@@ -38,14 +37,8 @@ func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 
 func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core {
 
-	level := GetZapLevel(verbosity)
-
 	// Add colors in for console
 	config := zap.Config{
-		Encoding:         encoding,
-		Level:            zap.NewAtomicLevelAt(level),
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
 		EncoderConfig: zapcore.EncoderConfig{
 			MessageKey: "message",
 
@@ -65,12 +58,6 @@ func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core 
 		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
 		GetZapLevel(verbosity),
 	)
-}
-
-// MakeBufferLogger - a multiroute logger, which supports
-// JSON/Console stdout and writing to buffer
-func MakeBufferLogger(b *bytes.Buffer, verb, enc string) *zap.Logger {
-	return zap.New(newCustomLogger(b, verb, enc), zap.AddCaller())
 }
 
 // MakeExtLogger - a multiroute logger, which uses console
