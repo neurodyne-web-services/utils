@@ -25,6 +25,7 @@ type LokiSyncer struct {
 func MakeLokiSyncer(conf LokiConfig) *LokiSyncer {
 	return &LokiSyncer{
 		conf:    conf,
+		streams: make([]*v1.Stream, MIN_ENTRIES),
 		entries: make(map[string][]*v1.Entry, MIN_ENTRIES),
 	}
 }
@@ -43,9 +44,9 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 	labels = buildLabels(l.conf.Service, "myJOB")
 	l.entries[labels] = append(l.entries[labels], makeEntry(msg.Level, msg.Caller, msg.Message))
 
-	// Process a batch
+	// buildStreams a batch
 	if len(l.entries[labels]) >= l.conf.BatchSize {
-		if err = l.process(); err != nil {
+		if err = l.buildStreams(); err != nil {
 			return 0, err
 		}
 	}
@@ -60,10 +61,15 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 }
 
 func (l *LokiSyncer) Sync() error {
-	return l.process()
+
+	if err := l.buildStreams(); err != nil {
+		return err
+	}
+
+	return l.procStreams()
 }
 
-func (l *LokiSyncer) process() error {
+func (l *LokiSyncer) buildStreams() error {
 
 	for labels, arr := range l.entries {
 		l.streams = append(l.streams, &v1.Stream{
@@ -73,11 +79,19 @@ func (l *LokiSyncer) process() error {
 		)
 	}
 
-	l.entries = make(map[string][]*v1.Entry, MIN_ENTRIES)
+	// Clear for the next batch
+	// l.entries = make(map[string][]*v1.Entry)
+	for i := range l.entries {
+		delete(l.entries, i)
+	}
 	return nil
 }
 
 func (l *LokiSyncer) procStreams() error {
+
+	if l.streams == nil {
+		return fmt.Errorf("return on empty streams")
+	}
 
 	req := v1.PushRequest{
 		Streams: l.streams,
@@ -99,7 +113,8 @@ func (l *LokiSyncer) procStreams() error {
 		return fmt.Errorf("invalid response code: %d", resp.code)
 	}
 
-	l.streams = make([]*v1.Stream, MIN_ENTRIES)
+	// Clear for the next batch
+	l.streams = make([]*v1.Stream, 0)
 
 	return nil
 }

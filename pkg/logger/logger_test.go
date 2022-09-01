@@ -12,7 +12,7 @@ const (
 	ctype     = "application/x-protobuf"
 	service   = "drevo"
 	verbosity = "debug"
-	batchSize = 1
+	batchSize = 4
 )
 
 func Test_buff(t *testing.T) {
@@ -44,10 +44,12 @@ func Test_loki(t *testing.T) {
 	logger.Warn("bar")
 	logger.Error("foo")
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 8; i++ {
 		logger.Warnf("My WARN value is %d", i)
 		logger.Debugf("My Debug value is %d", i)
 	}
+
+	logger.Info("Done !")
 
 	time.Sleep(2 * time.Second)
 }

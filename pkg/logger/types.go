@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	MIN_ENTRIES = 2
+	MIN_ENTRIES = 4
 )
 
 type serverResp struct {
