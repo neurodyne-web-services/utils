@@ -29,6 +29,8 @@ func MakeLokiSyncer(conf LokiConfig) *LokiSyncer {
 	}
 }
 
+var labels string
+
 func (l LokiSyncer) Write(p []byte) (n int, err error) {
 
 	var msg zapMsg
@@ -38,43 +40,45 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 		return 0, err
 	}
 
-	err = l.process(streamItem{
-		labels: buildLabels(l.conf.Service, "myJOB"),
-		entry:  makeEntry(msg.Level, msg.Caller, msg.Message),
-	})
+	labels = buildLabels(l.conf.Service, "myJOB")
+	l.entries[labels] = append(l.entries[labels], makeEntry(msg.Level, msg.Caller, msg.Message))
 
-	return 0, err
+	// Process a batch
+	if len(l.entries[labels]) >= l.conf.BatchSize {
+		if err = l.process(); err != nil {
+			return 0, err
+		}
+	}
+
+	if len(l.streams) > 0 {
+		if err = l.procStreams(); err != nil {
+			return 0, err
+		}
+	}
+
+	return 0, nil
 }
 
 func (l *LokiSyncer) Sync() error {
-	fmt.Println(">>>> Loki Sync Started")
-	fmt.Printf("Entries size: %d, streams size:%d \n", len(l.entries), len(l.streams))
-	return l.procStreams()
+	return l.process()
 }
 
-func (l *LokiSyncer) process(item streamItem) error {
+func (l *LokiSyncer) process() error {
 
-	if item.entry != nil {
-		l.entries[item.labels] = append(l.entries[item.labels], item.entry)
+	for labels, arr := range l.entries {
+		l.streams = append(l.streams, &v1.Stream{
+			Labels:  labels,
+			Entries: arr,
+		},
+		)
 	}
 
-	if len(l.entries[item.labels]) >= l.conf.BatchSize {
-
-		for labels, arr := range l.entries {
-			for _, v := range arr {
-				l.streams = append(l.streams, &v1.Stream{
-					Labels: labels,
-					Entry:  v,
-				})
-			}
-		}
-		l.entries = make(map[string][]*v1.Entry, MIN_ENTRIES)
-		return l.procStreams()
-	}
+	l.entries = make(map[string][]*v1.Entry, MIN_ENTRIES)
 	return nil
 }
 
 func (l *LokiSyncer) procStreams() error {
+
 	req := v1.PushRequest{
 		Streams: l.streams,
 	}

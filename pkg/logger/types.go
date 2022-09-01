@@ -2,8 +2,6 @@ package logger
 
 import (
 	"time"
-
-	v1 "github.com/neurodyne-web-services/utils/pkg/logger/loki/genout/v1"
 )
 
 const (
@@ -20,11 +18,6 @@ type zapMsg struct {
 	Caller  string
 	Message string
 	Time    time.Time
-}
-
-type streamItem struct {
-	labels string
-	entry  *v1.Entry
 }
 
 type LokiConfig struct {

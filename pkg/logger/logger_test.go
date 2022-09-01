@@ -12,7 +12,7 @@ const (
 	ctype     = "application/x-protobuf"
 	service   = "drevo"
 	verbosity = "debug"
-	batchSize = 4
+	batchSize = 1
 )
 
 func Test_buff(t *testing.T) {
@@ -39,17 +39,15 @@ func Test_loki(t *testing.T) {
 	zl := MakeExtLogger(loki, "debug", "json")
 	logger := zl.Sugar()
 
-	logger.Error("foo")
-	// logger.Debugf("My number is ", zap.Int("Number", 4))
+	logger.Info("baz")
 	logger.Debugf("My Number is %d", 4)
 	logger.Warn("bar")
-	logger.Info("baz")
+	logger.Error("foo")
 
 	for i := 0; i < 2; i++ {
-		logger.Debugf("My value is %d", i)
+		logger.Warnf("My WARN value is %d", i)
+		logger.Debugf("My Debug value is %d", i)
 	}
-
-	logger.Sync()
 
 	time.Sleep(2 * time.Second)
 }
