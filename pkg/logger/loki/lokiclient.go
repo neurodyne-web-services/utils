@@ -200,12 +200,11 @@ func (c *LokiLogger) process(entries map[string][]*v1.Entry) error {
 	var streams []*v1.Stream
 
 	for labels, arr := range entries {
-		for _, v := range arr {
-			streams = append(streams, &v1.Stream{
-				Labels: labels,
-				Entry:  v,
+		streams = append(streams,
+			&v1.Stream{
+				Labels:  labels,
+				Entries: arr,
 			})
-		}
 	}
 
 	req := v1.PushRequest{

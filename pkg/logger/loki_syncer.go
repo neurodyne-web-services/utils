@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/snappy"
 	v1 "github.com/neurodyne-web-services/utils/pkg/logger/loki/genout/v1"
+	"github.com/neurodyne-web-services/utils/pkg/random"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -41,7 +42,7 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 		return 0, err
 	}
 
-	labels = buildLabels(l.conf.Service, "myJOB")
+	labels = buildLabels(l.conf.Service, random.GenRandomName("job"))
 	l.entries[labels] = append(l.entries[labels], makeEntry(msg.Level, msg.Caller, msg.Message))
 
 	// buildStreams a batch

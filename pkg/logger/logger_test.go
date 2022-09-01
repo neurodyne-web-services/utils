@@ -20,7 +20,7 @@ func Test_buff(t *testing.T) {
 
 	b := &bytes.Buffer{}
 
-	logger := MakeBufferLogger(b, "debug", "console")
+	logger := MakeBufferLogger(b, "debug", "json")
 
 	fmt.Println("Raw log:")
 	logger.Error("foo")
@@ -44,12 +44,11 @@ func Test_loki(t *testing.T) {
 	logger.Warn("bar")
 	logger.Error("foo")
 
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 4; i++ {
 		logger.Warnf("My WARN value is %d", i)
 		logger.Debugf("My Debug value is %d", i)
 	}
 
 	logger.Info("Done !")
-
-	time.Sleep(2 * time.Second)
+	time.Sleep(time.Second)
 }
