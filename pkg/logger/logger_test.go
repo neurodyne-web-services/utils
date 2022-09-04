@@ -22,7 +22,7 @@ func Test_buff(t *testing.T) {
 
 	b := &bytes.Buffer{}
 
-	logger := MakeExtLogger(b, "debug", "console")
+	logger := MakeExtLogger(b, MakeLoggerConfig("debug", "console"))
 
 	fmt.Println(" >>>>> Raw log:")
 	logger.Error("foo")
@@ -38,7 +38,7 @@ func Test_zap(t *testing.T) {
 	loki := MakeLokiSyncer(conf)
 	defer loki.Sync()
 
-	zl := MakeExtLogger(loki, "debug", "json")
+	zl := MakeExtLogger(loki, MakeLoggerConfig("debug", "json"))
 	logger := zl.Sugar()
 
 	logger.Info("baz")

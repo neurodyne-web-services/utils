@@ -29,6 +29,15 @@ type LokiConfig struct {
 	BatchSize int
 }
 
+type LoggerConfig struct {
+	Output string
+	Level  string
+}
+
+func MakeLoggerConfig(lvl, out string) LoggerConfig {
+	return LoggerConfig{Output: out, Level: lvl}
+}
+
 func MakeLokiConfig(ena bool, url, ctype, service string, batchSize int) LokiConfig {
 	return LokiConfig{
 		Enable:    ena,
