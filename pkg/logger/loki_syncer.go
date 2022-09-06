@@ -43,7 +43,7 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 			return 0, err
 		}
 
-		labels = buildLabels(l.conf.Service, msg.Job)
+		labels = buildLabels(msg.Service, msg.Job)
 		l.entries[labels] = append(l.entries[labels], makeEntry(msg.Level, msg.Caller, msg.Message))
 
 		// buildStreams a batch

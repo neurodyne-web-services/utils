@@ -11,7 +11,6 @@ import (
 const (
 	url       = "http://localhost:3100/api/prom/push"
 	ctype     = "application/x-protobuf"
-	service   = "drevo"
 	verbosity = "debug"
 )
 
@@ -21,10 +20,9 @@ func Test_loki(t *testing.T) {
 	lokiConn := MakeLogConnector(verbosity, true)
 
 	lokiConf := LokiConfig{
-		Url:     url,
-		Ctype:   ctype,
-		Service: service,
-		Batch:   MakeBatchConfig(8, 30),
+		Url:   url,
+		Ctype: ctype,
+		Batch: MakeBatchConfig(8, 30),
 	}
 
 	conf := MakeConfig(consConn, lokiConn, lokiConf)

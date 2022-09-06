@@ -12,7 +12,6 @@ import (
 const (
 	url       = "http://localhost:3100/api/prom/push"
 	ctype     = "application/x-protobuf"
-	service   = "drevo"
 	verbosity = "debug"
 	batchSize = 4
 )
@@ -33,7 +32,7 @@ func Test_buff(t *testing.T) {
 
 func Test_zap(t *testing.T) {
 
-	conf := MakeLokiConfig(true, url, ctype, service, batchSize)
+	conf := MakeLokiConfig(true, url, ctype, batchSize)
 
 	loki := MakeLokiSyncer(conf)
 	defer loki.Sync()
@@ -43,6 +42,11 @@ func Test_zap(t *testing.T) {
 
 	logger.Info("baz")
 	logger.Debugw(fmt.Sprintf("Hello, %s", "Boris"),
+		"service", "front",
+		"job", random.GenRandomName("job"))
+
+	logger.Debugw(fmt.Sprintf("Hello, %s", "Emma"),
+		"service", "back",
 		"job", random.GenRandomName("job"))
 
 	logger.Warnw("My warn", "job", random.GenRandomName("job"))
