@@ -5,7 +5,14 @@ import (
 )
 
 const (
-	MIN_ENTRIES = 4
+	MinEntries = 4
+)
+
+type LokiMode uint8
+
+const (
+	DEV LokiMode = iota
+	PROD
 )
 
 type serverResp struct {
@@ -28,8 +35,8 @@ type zapMsg struct {
 }
 
 type LokiConfig struct {
-	Enable    bool
-	Url       string
+	Mode      LokiMode
+	URL       string
 	Ctype     string
 	BatchSize int
 }
@@ -39,14 +46,17 @@ type LoggerConfig struct {
 	Level  string
 }
 
-func MakeLoggerConfig(lvl, out string) LoggerConfig {
-	return LoggerConfig{Output: out, Level: lvl}
+func MakeLoggerConfig(mode LokiMode, lvl string) LoggerConfig {
+	if mode == PROD {
+		return LoggerConfig{Output: "json", Level: lvl}
+	}
+	return LoggerConfig{Output: "console", Level: lvl}
 }
 
-func MakeLokiConfig(ena bool, url, ctype string, batchSize int) LokiConfig {
+func MakeLokiConfig(mode LokiMode, url, ctype string, batchSize int) LokiConfig {
 	return LokiConfig{
-		Enable:    ena,
-		Url:       url,
+		Mode:      mode,
+		URL:       url,
 		Ctype:     ctype,
 		BatchSize: batchSize,
 	}

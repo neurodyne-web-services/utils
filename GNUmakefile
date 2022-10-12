@@ -5,5 +5,11 @@ tidy:
 upd:
 	@./upd.sh
 
+lint:
+	@golangci-lint run pkg/...
+
+lintfix:
+	@golangci-lint run pkg/... --fix
+
 test:
 	@go test -v ./...

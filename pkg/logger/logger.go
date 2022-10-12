@@ -8,9 +8,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// MakeLogger - simple customized console logger for dev
+// MakeLogger - simple customized console logger for dev.
 func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
-
 	level := GetZapLevel(verbosity)
 
 	cfg := zap.Config{
@@ -36,7 +35,6 @@ func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 }
 
 func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core {
-
 	// Add colors in for console
 	config := zap.Config{
 		EncoderConfig: zapcore.EncoderConfig{
@@ -61,18 +59,17 @@ func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core 
 }
 
 // MakeExtLogger - a multiroute logger, which uses console
-// and an external logger thru the Writer interface
+// and an external logger thru the Writer interface.
 func MakeExtLogger(w io.Writer, cfg LoggerConfig) *zap.Logger {
 	return zap.New(newCustomLogger(w, cfg.Level, cfg.Output), zap.AddCaller())
 }
 
 // GetZapLevel - returns a Zap logger verbosity level based
-// on the input string
+// on the input string.
 func GetZapLevel(verb string) zapcore.Level {
 	var level zapcore.Level
 
 	switch verb {
-
 	case "debug":
 		level = zapcore.DebugLevel
 
@@ -100,7 +97,6 @@ func getZapEncoder(encoder string, cfg zapcore.EncoderConfig) zapcore.Encoder {
 
 	// Build a proper logger type
 	switch encoder {
-
 	case "console":
 		enc = zapcore.NewConsoleEncoder(cfg)
 

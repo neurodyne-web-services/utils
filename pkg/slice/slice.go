@@ -14,7 +14,7 @@ const (
 
 type GenericSliceFunc func(a, b interface{}) []interface{}
 
-// DiffSlices - compares two string slices. False if equal
+// DiffSlices - compares two string slices. False if equal.
 func EqualSlices(a, b interface{}) bool {
 	av := reflect.ValueOf(a)
 	bv := reflect.ValueOf(b)
@@ -35,7 +35,7 @@ func EqualSlices(a, b interface{}) bool {
 }
 
 // Taken from https://github.com/juliangruber/go-intersect
-// SliceIntersect - finds an intersect of two slices of any type
+// SliceIntersect - finds an intersect of two slices of any type.
 func SliceIntersect(a, b interface{}) []interface{} {
 	set := make([]interface{}, 0, defaultSliceLen)
 	hash := make(map[interface{}]bool, defaultSliceLen)
@@ -59,7 +59,7 @@ func SliceIntersect(a, b interface{}) []interface{} {
 }
 
 // SliceDiff - finds an intersect of two slices of any type
-// SliceDiff with hash has complexity: O(n * x) where x is a factor of hash function efficiency (between 1 and 2)
+// SliceDiff with hash has complexity: O(n * x) where x is a factor of hash function efficiency (between 1 and 2).
 func SliceDiff(a, b interface{}) []interface{} {
 	av := reflect.ValueOf(a)
 	bv := reflect.ValueOf(b)

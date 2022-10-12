@@ -25,17 +25,15 @@ type LokiSyncer struct {
 func MakeLokiSyncer(conf LokiConfig) *LokiSyncer {
 	return &LokiSyncer{
 		conf:    conf,
-		streams: make([]*v1.Stream, MIN_ENTRIES),
-		entries: make(map[string][]*v1.Entry, MIN_ENTRIES),
+		streams: make([]*v1.Stream, MinEntries),
+		entries: make(map[string][]*v1.Entry, MinEntries),
 	}
 }
 
 var labels string
 
 func (l LokiSyncer) Write(p []byte) (n int, err error) {
-
-	if l.conf.Enable {
-
+	if l.conf.Mode == PROD {
 		var msg zapMsg
 
 		err = json.Unmarshal(p, &msg)
@@ -64,7 +62,6 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 }
 
 func (l *LokiSyncer) Sync() error {
-
 	if err := l.buildStreams(); err != nil {
 		return err
 	}
@@ -73,7 +70,6 @@ func (l *LokiSyncer) Sync() error {
 }
 
 func (l *LokiSyncer) buildStreams() error {
-
 	for labels, arr := range l.entries {
 		l.streams = append(l.streams, &v1.Stream{
 			Labels:  labels,
@@ -91,7 +87,6 @@ func (l *LokiSyncer) buildStreams() error {
 }
 
 func (l *LokiSyncer) procStreams() error {
-
 	if l.streams == nil {
 		return fmt.Errorf("return on empty streams")
 	}
@@ -112,7 +107,7 @@ func (l *LokiSyncer) procStreams() error {
 		return err
 	}
 
-	if resp.code != 204 {
+	if resp.code != http.StatusNoContent {
 		return fmt.Errorf("invalid response code: %d", resp.code)
 	}
 
@@ -125,7 +120,7 @@ func (l *LokiSyncer) procStreams() error {
 func (l *LokiSyncer) send(buff *bytes.Buffer) (serverResp, error) {
 	var out = serverResp{}
 
-	req, err := http.NewRequest("POST", l.conf.Url, buff)
+	req, err := http.NewRequest(http.MethodPost, l.conf.URL, buff)
 	if err != nil {
 		return out, err
 	}
