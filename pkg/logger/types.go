@@ -13,12 +13,17 @@ type serverResp struct {
 	body []byte
 }
 
+type labelEntry struct {
+	Env     string
+	Service string
+}
+
 type zapMsg struct {
 	Level   string
 	Caller  string
-	Service string
-	Job     string
 	Message string
+	Env     string
+	Service string
 	Time    time.Time
 }
 

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/neurodyne-web-services/utils/pkg/random"
 )
 
 const (
@@ -40,16 +38,24 @@ func Test_zap(t *testing.T) {
 	zl := MakeExtLogger(loki, MakeLoggerConfig("debug", "json"))
 	logger := zl.Sugar()
 
-	logger.Info("baz")
+	logger.Info("baz", "env", "prod")
+
 	logger.Debugw(fmt.Sprintf("Hello, %s", "Boris"),
-		"service", "front",
-		"job", random.GenRandomName("job"))
+		"env", "dev",
+		"service", "front")
 
 	logger.Debugw(fmt.Sprintf("Hello, %s", "Emma"),
-		"service", "back",
-		"job", random.GenRandomName("job"))
+		"env", "dev",
+		"service", "back")
 
-	logger.Warnw("My warn", "job", random.GenRandomName("job"))
+	logger.Debugw(fmt.Sprintf("Hello, %s", "Ivan"),
+		"env", "prod",
+		"service", "front")
+
+	logger.Warnw("My warn",
+		"env", "prod",
+		"service", "back")
+
 	logger.Error("My error")
 
 	time.Sleep(time.Second)

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
-	v1 "github.com/neurodyne-web-services/utils/pkg/logger/loki/genout/v1"
+	v1 "github.com/neurodyne-web-services/utils/pkg/logger/proto/genout/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -43,7 +43,7 @@ func (l LokiSyncer) Write(p []byte) (n int, err error) {
 			return 0, err
 		}
 
-		labels = buildLabels(msg.Service, msg.Job)
+		labels = BuildLabels(labelEntry{msg.Env, msg.Service})
 		l.entries[labels] = append(l.entries[labels], makeEntry(msg.Level, msg.Caller, msg.Message))
 
 		// buildStreams a batch
@@ -147,8 +147,8 @@ func (l *LokiSyncer) send(buff *bytes.Buffer) (serverResp, error) {
 	return out, nil
 }
 
-func buildLabels(service, job string) string {
-	return "{service=\"" + service + "\",job=\"" + job + "\"}"
+func BuildLabels(lbl labelEntry) string {
+	return "{env=\"" + lbl.Env + "\",service=\"" + lbl.Service + "\"}"
 }
 
 func makeEntry(level, caller, msg string) *v1.Entry {
