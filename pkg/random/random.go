@@ -1,8 +1,10 @@
 // Package random contains different random generators.
-package random
+package rand
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"fmt"
 	"math/rand"
 	"time"
 )
@@ -30,7 +32,7 @@ const uniqueIDLength = 6 // Should be good for 62^6 = 56+ billion combinations
 // UniqueId returns a unique (ish) id we can attach to resources and tfstate files so they don't conflict with each other
 // Uses base 62 to generate a 6 character string that's unlikely to collide with the handful of tests we run in
 // parallel. Based on code here: http://stackoverflow.com/a/9543797/483528
-func UniqueId() string {
+func UniqueID() string {
 	var out bytes.Buffer
 
 	generator := newRand()
@@ -47,5 +49,11 @@ func newRand() *rand.Rand {
 }
 
 func GenRandomName(pref string) string {
-	return pref + "-" + UniqueId()
+	return pref + "-" + UniqueID()
+}
+
+// GetHash - calculates a SHA1 hash 20 bytes for the input string.
+func GetHash(d string) string {
+	ab20 := sha1.Sum([]byte(d))
+	return fmt.Sprintf("%x", ab20)
 }

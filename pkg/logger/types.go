@@ -41,16 +41,16 @@ type LokiConfig struct {
 	BatchSize int
 }
 
-type LoggerConfig struct {
+type Config struct {
 	Output string
 	Level  string
 }
 
-func MakeLoggerConfig(mode LokiMode, lvl string) LoggerConfig {
+func MakeLoggerConfig(mode LokiMode, lvl string) Config {
 	if mode == PROD {
-		return LoggerConfig{Output: "json", Level: lvl}
+		return Config{Output: "json", Level: lvl}
 	}
-	return LoggerConfig{Output: "console", Level: lvl}
+	return Config{Output: "console", Level: lvl}
 }
 
 func MakeLokiConfig(mode LokiMode, url, ctype string, batchSize int) LokiConfig {

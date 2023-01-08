@@ -60,7 +60,7 @@ func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core 
 
 // MakeExtLogger - a multiroute logger, which uses console
 // and an external logger thru the Writer interface.
-func MakeExtLogger(w io.Writer, cfg LoggerConfig) *zap.Logger {
+func MakeExtLogger(w io.Writer, cfg Config) *zap.Logger {
 	return zap.New(newCustomLogger(w, cfg.Level, cfg.Output), zap.AddCaller())
 }
 
