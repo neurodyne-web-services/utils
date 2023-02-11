@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-func MarshalGzip(data interface{}) ([]byte, error) {
+func MarshalGzip(data any) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	g := gzip.NewWriter(buf)
 	enc := json.NewEncoder(g)
@@ -19,7 +19,7 @@ func MarshalGzip(data interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func UnmarshalGzip(b []byte, dst interface{}) error {
+func UnmarshalGzip(b []byte, dst any) error {
 	r := bytes.NewReader(b)
 	g, err := gzip.NewReader(r)
 	if err != nil {

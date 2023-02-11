@@ -27,7 +27,7 @@ func Test_loki(t *testing.T) {
 	RunServer(t, zl)
 
 	// Create client
-	cc, err := grpc.Dial(os.Getenv("GRPC_URL_GATE"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	cc, err := grpc.Dial(os.Getenv("GRPC_URL"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	defer cc.Close()
 
@@ -73,7 +73,7 @@ func RunServer(t *testing.T, zl *zap.SugaredLogger) {
 
 	opts := &[]grpc.ServerOption{}
 
-	lis, err := net.Listen("tcp", os.Getenv("GRPC_URL_GATE"))
+	lis, err := net.Listen("tcp", os.Getenv("GRPC_URL"))
 	assert.NoError(t, err)
 
 	s := grpc.NewServer(*opts...)
