@@ -3,7 +3,9 @@ package rand
 
 import (
 	"bytes"
+	crand "crypto/rand"
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"math/rand"
 	"time"
@@ -44,4 +46,27 @@ func GenRandomName(pref string) string {
 func GetHash(d string) string {
 	ab20 := sha1.Sum([]byte(d))
 	return fmt.Sprintf("%x", ab20)
+}
+
+// String will generate a byte slice of size nBytes and then
+// return a string that is the base64 URL encoded version of
+// that byte slice.
+func String(nBytes int) (string, error) {
+	b, err := Bytes(nBytes)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+// Bytes will help us generate a random bytes, or will
+// return an error if there was one. This uses the crypto/rand
+// package so it is safe to use with things like hydra state.
+func Bytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := crand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }
