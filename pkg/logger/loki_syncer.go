@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang/snappy"
@@ -33,7 +34,7 @@ func MakeLokiSyncer(conf LokiConfig) *LokiSyncer {
 var labels string
 
 func (l LokiSyncer) Write(p []byte) (n int, err error) {
-	if l.conf.Mode == PROD {
+	if strings.ToLower(l.conf.Mode) == "prod" {
 		var msg zapMsg
 
 		err = json.Unmarshal(p, &msg)

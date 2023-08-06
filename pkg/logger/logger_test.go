@@ -11,7 +11,6 @@ import (
 const (
 	url       = "http://localhost:3100/api/prom/push"
 	ctype     = "application/x-protobuf"
-	lokiMode  = logger.DEV
 	mode      = "dev"
 	verbosity = "debug"
 	batchSize = 4
@@ -34,7 +33,7 @@ func Test_buff(t *testing.T) {
 }
 
 func Test_zap(t *testing.T) {
-	conf := logger.MakeLokiConfig(lokiMode, url, ctype, batchSize)
+	conf := logger.MakeLokiConfig(mode, url, ctype, batchSize)
 
 	loki := logger.MakeLokiSyncer(conf)
 	defer loki.Sync()

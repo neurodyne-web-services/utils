@@ -1,18 +1,12 @@
 package logger
 
 import (
+	"strings"
 	"time"
 )
 
 const (
 	MinEntries = 4
-)
-
-type LokiMode uint8
-
-const (
-	DEV LokiMode = iota
-	PROD
 )
 
 type serverResp struct {
@@ -35,7 +29,7 @@ type zapMsg struct {
 }
 
 type LokiConfig struct {
-	Mode      LokiMode
+	Mode      string
 	URL       string
 	Ctype     string
 	BatchSize int
@@ -46,14 +40,14 @@ type Config struct {
 	Level  string
 }
 
-func MakeLoggerConfig(mode LokiMode, lvl string) Config {
-	if mode == PROD {
+func MakeLoggerConfig(mode, lvl string) Config {
+	if strings.ToLower(mode) == "prod" {
 		return Config{Output: "json", Level: lvl}
 	}
 	return Config{Output: "console", Level: lvl}
 }
 
-func MakeLokiConfig(mode LokiMode, url, ctype string, batchSize int) LokiConfig {
+func MakeLokiConfig(mode, url, ctype string, batchSize int) LokiConfig {
 	return LokiConfig{
 		Mode:      mode,
 		URL:       url,
