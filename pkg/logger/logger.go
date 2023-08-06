@@ -8,6 +8,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const (
+	timeFormat = "02 Jan 2006 15:04:05 MST"
+)
+
 // MakeLogger - simple customized console logger for dev.
 func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 	level := GetZapLevel(verbosity)
@@ -34,25 +38,24 @@ func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
 	return cfg.Build()
 }
 
-func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core {
-	// Add colors in for console
-	config := zap.Config{
-		EncoderConfig: zapcore.EncoderConfig{
-			MessageKey: "message",
+var DevConfig = zap.Config{
+	EncoderConfig: zapcore.EncoderConfig{
+		MessageKey: "message",
 
-			LevelKey:    "level",
-			EncodeLevel: zapcore.CapitalColorLevelEncoder,
+		LevelKey:    "level",
+		EncodeLevel: zapcore.CapitalColorLevelEncoder,
 
-			TimeKey:    "time",
-			EncodeTime: zapcore.RFC3339TimeEncoder,
+		TimeKey:    "time",
+		EncodeTime: zapcore.TimeEncoderOfLayout(timeFormat),
 
-			CallerKey:    "caller",
-			EncodeCaller: zapcore.ShortCallerEncoder,
-		},
-	}
+		CallerKey:    "caller",
+		EncodeCaller: zapcore.ShortCallerEncoder,
+	},
+}
 
+func NewCustomLogger(cfg zap.Config, pipeTo io.Writer, verbosity, encoding string) zapcore.Core {
 	return zapcore.NewCore(
-		getZapEncoder(encoding, config.EncoderConfig),
+		getZapEncoder(encoding, cfg.EncoderConfig),
 		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
 		GetZapLevel(verbosity),
 	)
@@ -60,8 +63,8 @@ func newCustomLogger(pipeTo io.Writer, verbosity, encoding string) zapcore.Core 
 
 // MakeExtLogger - a multiroute logger, which uses console
 // and an external logger thru the Writer interface.
-func MakeExtLogger(w io.Writer, cfg Config) *zap.Logger {
-	return zap.New(newCustomLogger(w, cfg.Level, cfg.Output), zap.AddCaller())
+func MakeExtLogger(core zapcore.Core) *zap.Logger {
+	return zap.New(core, zap.AddCaller())
 }
 
 // GetZapLevel - returns a Zap logger verbosity level based

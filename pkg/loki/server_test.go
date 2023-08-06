@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/neurodyne-web-services/utils/pkg/logger"
 	"github.com/neurodyne-web-services/utils/pkg/loki"
 	v1 "github.com/neurodyne-web-services/utils/pkg/loki/loki/v1"
 	"github.com/stretchr/testify/assert"
@@ -17,11 +16,12 @@ import (
 const (
 	url       = "http://0.0.0.0:3100/api/prom/push"
 	level     = "debug"
+	mod       = "dev"
 	batchSize = 4
 )
 
 func Test_loki(t *testing.T) {
-	zl := loki.BuildLokiLogger(logger.DEV, level, url, batchSize)
+	zl := loki.BuildLokiLogger(mod, level, url, batchSize)
 	defer zl.Sync()
 
 	RunServer(t, zl)

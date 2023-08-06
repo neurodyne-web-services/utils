@@ -41,10 +41,12 @@ func (s Server) Push(_ context.Context, item *v1.Item) (*v1.Empty, error) {
 }
 
 // BuildLokiLogger - returns an instancf of Zap logger with Loki.
-func BuildLokiLogger(mode logger.LokiMode, lvl, url string, batchSize int) *zap.SugaredLogger {
-	conf := logger.MakeLokiConfig(mode, url, "application/x-protobuf", batchSize)
+func BuildLokiLogger(mode, lvl, url string, batchSize int) *zap.SugaredLogger {
+	conf := logger.MakeLokiConfig(logger.LokiMode(logger.GetZapLevel(mode)),
+		url, "application/x-protobuf", batchSize)
 	loki := logger.MakeLokiSyncer(conf)
-	zl := logger.MakeExtLogger(loki, logger.MakeLoggerConfig(mode, lvl))
+	core := logger.NewCustomLogger(logger.DevConfig, loki, mode, lvl)
+	zl := logger.MakeExtLogger(core)
 
 	return zl.Sugar()
 }

@@ -11,7 +11,8 @@ import (
 const (
 	url       = "http://localhost:3100/api/prom/push"
 	ctype     = "application/x-protobuf"
-	mode      = logger.DEV
+	lokiMode  = logger.DEV
+	mode      = "dev"
 	verbosity = "debug"
 	batchSize = 4
 	loops     = 1
@@ -22,7 +23,8 @@ func Test_buff(t *testing.T) {
 
 	b := &bytes.Buffer{}
 
-	logger := logger.MakeExtLogger(b, logger.MakeLoggerConfig(mode, verbosity))
+	core := logger.NewCustomLogger(logger.DevConfig, b, mode, verbosity)
+	logger := logger.MakeExtLogger(core)
 
 	fmt.Println(" >>>>> Raw log:")
 	logger.Error("foo")
@@ -32,12 +34,13 @@ func Test_buff(t *testing.T) {
 }
 
 func Test_zap(t *testing.T) {
-	conf := logger.MakeLokiConfig(mode, url, ctype, batchSize)
+	conf := logger.MakeLokiConfig(lokiMode, url, ctype, batchSize)
 
 	loki := logger.MakeLokiSyncer(conf)
 	defer loki.Sync()
 
-	zl := logger.MakeExtLogger(loki, logger.MakeLoggerConfig(conf.Mode, verbosity))
+	core := logger.NewCustomLogger(logger.DevConfig, loki, mode, verbosity)
+	zl := logger.MakeExtLogger(core)
 	logger := zl.Sugar()
 
 	logger.Warn("Starting test...")
