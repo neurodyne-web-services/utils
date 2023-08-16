@@ -38,11 +38,12 @@ func Test_zap(t *testing.T) {
 	loki := logger.MakeLokiSyncer(conf)
 	defer loki.Sync()
 
-	core := logger.NewCustomLogger(logger.DevConfig, loki, mode, verbosity)
+	core := logger.NewCustomLogger(logger.DevConfig, loki, verbosity, mode)
 	zl := logger.MakeExtLogger(core)
 	logger := zl.Sugar()
 
 	logger.Warn("Starting test...")
+	logger.Infof("Log level: %s", logger.Level())
 
 	for i := 0; i < loops; i++ {
 		logger.Infow(fmt.Sprintf("PROD Info value, %d", i),
