@@ -6,39 +6,43 @@ import (
 	"testing"
 
 	"github.com/neurodyne-web-services/utils/pkg/logger"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
 	url       = "http://localhost:3100/api/prom/push"
 	ctype     = "application/x-protobuf"
-	mode      = "dev"
+	mode      = "json"
 	verbosity = "debug"
 	batchSize = 4
 	loops     = 1
 )
 
-func Test_buff(t *testing.T) {
-	t.Skip()
-
+func Test_buffered_logger(t *testing.T) {
 	b := &bytes.Buffer{}
 
-	core := logger.NewCustomLogger(logger.DevConfig, b, mode, verbosity)
-	logger := logger.MakeExtLogger(core)
+	t.Run("Console logger", func(_ *testing.T) {
+		core := logger.NewConsolePipeLogger(logger.DevConfig, b, zapcore.DebugLevel)
+		logger := logger.MakeExtLogger(core)
 
-	fmt.Println(" >>>>> Raw log:")
-	logger.Error("foo")
-	logger.Error("bar")
+		logger.Error("foo")
+	})
 
-	fmt.Printf(">>>>> Bufferred log: \n%s", b.String())
+	t.Run("JSON logger", func(_ *testing.T) {
+		core := logger.NewJSONPipeLogger(logger.DevConfig, b, zapcore.DebugLevel)
+		logger := logger.MakeExtLogger(core)
+
+		logger.Error("foo")
+	})
 }
 
-func Test_zap(t *testing.T) {
+func Test_loki_logger(t *testing.T) {
 	conf := logger.MakeLokiConfig(mode, url, ctype, batchSize)
 
 	loki := logger.MakeLokiSyncer(conf)
 	defer loki.Sync()
 
-	core := logger.NewCustomLogger(logger.DevConfig, loki, verbosity, mode)
+	core := logger.NewConsolePipeLogger(logger.DevConfig, loki, zapcore.DebugLevel)
 	zl := logger.MakeExtLogger(core)
 	logger := zl.Sugar()
 

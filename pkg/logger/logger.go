@@ -13,9 +13,7 @@ const (
 )
 
 // MakeLogger - simple customized console logger for dev.
-func MakeLogger(verbosity, encoding string) (*zap.Logger, error) {
-	level := GetZapLevel(verbosity)
-
+func MakeLogger(encoding string, level zapcore.Level) (*zap.Logger, error) {
 	cfg := zap.Config{
 		Encoding:         encoding,
 		Level:            zap.NewAtomicLevelAt(level),
@@ -53,11 +51,21 @@ var DevConfig = zap.Config{
 	},
 }
 
-func NewCustomLogger(cfg zap.Config, pipeTo io.Writer, verbosity, encoding string) zapcore.Core {
+// NewConsolePipeLogger - console logger with extra pipe.
+func NewConsolePipeLogger(cfg zap.Config, pipeTo io.Writer, level zapcore.Level) zapcore.Core {
 	return zapcore.NewCore(
-		getZapEncoder(encoding, cfg.EncoderConfig),
+		zapcore.NewConsoleEncoder(cfg.EncoderConfig),
 		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
-		GetZapLevel(verbosity),
+		level,
+	)
+}
+
+// NewJSONPipeLogger - console logger with extra pipe.
+func NewJSONPipeLogger(cfg zap.Config, pipeTo io.Writer, level zapcore.Level) zapcore.Core {
+	return zapcore.NewCore(
+		zapcore.NewJSONEncoder(cfg.EncoderConfig),
+		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
+		level,
 	)
 }
 
@@ -65,50 +73,4 @@ func NewCustomLogger(cfg zap.Config, pipeTo io.Writer, verbosity, encoding strin
 // and an external logger thru the Writer interface.
 func MakeExtLogger(core zapcore.Core) *zap.Logger {
 	return zap.New(core, zap.AddCaller())
-}
-
-// GetZapLevel - returns a Zap logger verbosity level based
-// on the input string.
-func GetZapLevel(verb string) zapcore.Level {
-	var level zapcore.Level
-
-	switch verb {
-	case "debug":
-		level = zapcore.DebugLevel
-
-	case "fatal":
-		level = zapcore.FatalLevel
-
-	case "error":
-		level = zapcore.ErrorLevel
-
-	case "warn":
-		level = zapcore.WarnLevel
-
-	case "info":
-		level = zapcore.InfoLevel
-
-	default:
-		level = zapcore.InfoLevel
-	}
-
-	return level
-}
-
-func getZapEncoder(encoder string, cfg zapcore.EncoderConfig) zapcore.Encoder {
-	var enc zapcore.Encoder
-
-	// Build a proper logger type
-	switch encoder {
-	case "console":
-		enc = zapcore.NewConsoleEncoder(cfg)
-
-	case "json":
-		enc = zapcore.NewJSONEncoder(cfg)
-
-	default:
-		enc = zapcore.NewConsoleEncoder(cfg)
-	}
-
-	return enc
 }

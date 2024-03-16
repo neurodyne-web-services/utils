@@ -1,9 +1,9 @@
 
 tidy:
-	@go mod tidy --compat=1.19
+	@go mod tidy
 
 upd:
-	@./upd.sh
+	@go get -u ./...
 
 lint:
 	@golangci-lint run pkg/...
