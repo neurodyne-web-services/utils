@@ -2,6 +2,7 @@ package logger
 
 import (
 	"io"
+	"strings"
 
 	"github.com/neurodyne-web-services/utils/pkg/functional"
 	"go.uber.org/zap"
@@ -18,6 +19,11 @@ const (
 const (
 	timeFormat = "02 Jan 2006 15:04:05 MST"
 )
+
+type Config struct {
+	Type  string
+	Level string
+}
 
 // MakeLogger - simple customized console logger for dev.
 func MakeLogger(encoding string, level zapcore.Level) (*zap.Logger, error) {
@@ -58,18 +64,36 @@ var DevConfig = zap.Config{
 	},
 }
 
-// NewPipedLogger - console/json logger with an extra pipe.
-func NewPipedLogger(cfg zap.Config, loggerType Type, level zapcore.Level, sinks ...io.Writer) zapcore.Core {
+// NewPipedLogger - zap logger with multiple sinks.
+// we use strings for log type and verbosity since those come from confings which are strings in most clients.
+func NewPipedLogger(cfg zap.Config, config Config, sinks ...io.Writer) zapcore.Core {
 	var enc zapcore.Encoder
+	var level zapcore.Level
 
-	switch loggerType {
-	case Console:
-		enc = zapcore.NewConsoleEncoder(cfg.EncoderConfig)
-	case JSON:
+	// build proper encoder
+	switch strings.ToLower(config.Type) {
+	case "json":
 		enc = zapcore.NewJSONEncoder(cfg.EncoderConfig)
 
 	default:
 		enc = zapcore.NewConsoleEncoder(cfg.EncoderConfig)
+	}
+
+	// select zap verbosity
+	switch strings.ToLower(config.Level) {
+	case "info":
+		level = zapcore.InfoLevel
+	case "warn":
+		level = zapcore.WarnLevel
+	case "error":
+		level = zapcore.ErrorLevel
+	case "debug":
+		level = zapcore.DebugLevel
+	case "pinic":
+		level = zapcore.PanicLevel
+
+	default:
+		level = zapcore.InfoLevel
 	}
 
 	syncers := functional.Map(sinks, func(w io.Writer) zapcore.WriteSyncer {
