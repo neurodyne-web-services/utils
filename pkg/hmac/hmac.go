@@ -23,9 +23,9 @@ func CheckMAC(message, messageMAC, key []byte, sha func() hash.Hash) bool {
 // Sign a message with the key and return bytes.
 // Note: for human readable output see encoding/hex and
 // encode string functions.
-func Sign(message, key []byte, sha func() hash.Hash) []byte {
-	mac := hmac.New(sha, key)
-	mac.Write(message)
+func Sign(key, secret []byte, sha func() hash.Hash) []byte {
+	mac := hmac.New(sha, secret)
+	mac.Write(key)
 	signed := mac.Sum(nil)
 	return signed
 }

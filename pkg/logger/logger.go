@@ -51,19 +51,22 @@ var DevConfig = zap.Config{
 	},
 }
 
-// NewConsolePipeLogger - console logger with extra pipe.
-func NewConsolePipeLogger(cfg zap.Config, pipeTo io.Writer, level zapcore.Level) zapcore.Core {
-	return zapcore.NewCore(
-		zapcore.NewConsoleEncoder(cfg.EncoderConfig),
-		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
-		level,
-	)
-}
+// NewPipedLogger - console/json logger with an extra pipe.
+func NewPipedLogger(cfg zap.Config, pipeTo io.Writer, loggerType LoggerType, level zapcore.Level) zapcore.Core {
+	var enc zapcore.Encoder
 
-// NewJSONPipeLogger - console logger with extra pipe.
-func NewJSONPipeLogger(cfg zap.Config, pipeTo io.Writer, level zapcore.Level) zapcore.Core {
+	switch loggerType {
+	case Console:
+		enc = zapcore.NewConsoleEncoder(cfg.EncoderConfig)
+	case JSON:
+		enc = zapcore.NewJSONEncoder(cfg.EncoderConfig)
+
+	default:
+		enc = zapcore.NewConsoleEncoder(cfg.EncoderConfig)
+	}
+
 	return zapcore.NewCore(
-		zapcore.NewJSONEncoder(cfg.EncoderConfig),
+		enc,
 		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
 		level,
 	)

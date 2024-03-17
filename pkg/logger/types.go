@@ -1,8 +1,18 @@
 package logger
 
 import (
-	"strings"
 	"time"
+)
+
+type LoggerType uint8
+
+const (
+	Console LoggerType = iota
+	ConsoleBuffer
+	ConsoleLoki
+	JSON
+	JSONBuffer
+	JSONLoki
 )
 
 const (
@@ -29,29 +39,12 @@ type zapMsg struct {
 }
 
 type LokiConfig struct {
-	Mode      string
-	URL       string
-	Ctype     string
-	BatchSize int
+	URL         string
+	ContentType string
+	BatchSize   int
 }
 
 type Config struct {
 	Output string
 	Level  string
-}
-
-func MakeLoggerConfig(mode, lvl string) Config {
-	if strings.ToLower(mode) == "prod" {
-		return Config{Output: "json", Level: lvl}
-	}
-	return Config{Output: "console", Level: lvl}
-}
-
-func MakeLokiConfig(mode, url, ctype string, batchSize int) LokiConfig {
-	return LokiConfig{
-		Mode:      mode,
-		URL:       url,
-		Ctype:     ctype,
-		BatchSize: batchSize,
-	}
 }

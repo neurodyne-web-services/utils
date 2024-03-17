@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 )
 
+// MarshalGzip - JSON encoder with gzip compression.
 func MarshalGzip(data any) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	g := gzip.NewWriter(buf)
@@ -19,6 +20,7 @@ func MarshalGzip(data any) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UnmarshalGzip - JSON decoder with gzip compression.
 func UnmarshalGzip(b []byte, dst any) error {
 	r := bytes.NewReader(b)
 	g, err := gzip.NewReader(r)
