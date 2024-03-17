@@ -4,15 +4,11 @@ import (
 	"time"
 )
 
-type LoggerType uint8
+type Type uint8
 
 const (
-	Console LoggerType = iota
-	ConsoleBuffer
-	ConsoleLoki
+	Console Type = iota
 	JSON
-	JSONBuffer
-	JSONLoki
 )
 
 const (

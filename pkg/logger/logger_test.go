@@ -8,26 +8,23 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const (
-	url       = "http://localhost:3100/api/prom/push"
-	ctype     = "application/x-protobuf"
-	batchSize = 4
-	loops     = 1
-)
-
 func Test_piped_logger(t *testing.T) {
 	b := &bytes.Buffer{}
 
-	var lt logger.LoggerType
+	var lt logger.Type
 	t.Run("Console logger", func(_ *testing.T) {
-		core := logger.NewPipedLogger(logger.DevConfig, b, lt, zapcore.DebugLevel)
+		lt = logger.Console
+
+		core := logger.NewPipedLogger(logger.DevConfig, lt, zapcore.DebugLevel, b)
 		logger := logger.MakeExtLogger(core)
 
 		logger.Error("foo")
 	})
 
 	t.Run("JSON logger", func(_ *testing.T) {
-		core := logger.NewPipedLogger(logger.DevConfig, b, lt, zapcore.DebugLevel)
+		lt = logger.JSON
+
+		core := logger.NewPipedLogger(logger.DevConfig, lt, zapcore.DebugLevel, b)
 		logger := logger.MakeExtLogger(core)
 
 		logger.Error("foo")

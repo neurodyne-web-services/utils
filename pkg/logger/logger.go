@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/neurodyne-web-services/utils/pkg/functional"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -52,7 +53,7 @@ var DevConfig = zap.Config{
 }
 
 // NewPipedLogger - console/json logger with an extra pipe.
-func NewPipedLogger(cfg zap.Config, pipeTo io.Writer, loggerType LoggerType, level zapcore.Level) zapcore.Core {
+func NewPipedLogger(cfg zap.Config, loggerType Type, level zapcore.Level, pipeTo ...io.Writer) zapcore.Core {
 	var enc zapcore.Encoder
 
 	switch loggerType {
@@ -65,9 +66,15 @@ func NewPipedLogger(cfg zap.Config, pipeTo io.Writer, loggerType LoggerType, lev
 		enc = zapcore.NewConsoleEncoder(cfg.EncoderConfig)
 	}
 
+	syncers := functional.Map(pipeTo, func(w io.Writer) zapcore.WriteSyncer {
+		return zapcore.AddSync(w)
+	})
+
+	syncers = append(syncers, os.Stderr)
+
 	return zapcore.NewCore(
 		enc,
-		zap.CombineWriteSyncers(os.Stderr, zapcore.AddSync(pipeTo)),
+		zap.CombineWriteSyncers(syncers...),
 		level,
 	)
 }
