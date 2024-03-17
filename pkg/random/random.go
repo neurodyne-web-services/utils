@@ -1,22 +1,31 @@
 // Package random contains different random generators.
-package rand
+package utils
 
 import (
 	"bytes"
+	"crypto/md5"
 	crand "crypto/rand"
-	"crypto/sha1"
-	"encoding/base64"
-	"fmt"
+	"encoding/hex"
+	"math/big"
 	"math/rand"
+	"strings"
 	"time"
 )
+
+const base62chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+const allChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_,.?-~@#$%^+-&*()=\\/<>`"
 
 // Random generates a random int between min and max, inclusive.
 func Random(min int, max int) int {
 	return newRand().Intn(max-min+1) + min
 }
 
-const base62chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+// RandomString picks a random element in the slice of string.
+func RandomItem[T any](elements []T) T {
+	index := Random(0, len(elements)-1)
+	return elements[index]
+}
+
 const uniqueIDLength = 6 // Should be good for 62^6 = 56+ billion combinations
 
 // UniqueId returns a unique (ish) id we can attach to resources and tfstate files so they don't conflict with each other
@@ -38,35 +47,53 @@ func newRand() *rand.Rand {
 	return rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
+// GenRandomName - generates a random name for an input key, e.g foo-sEncsH.
 func GenRandomName(pref string) string {
 	return pref + "-" + UniqueID()
 }
 
-// GetHash - calculates a SHA1 hash 20 bytes for the input string.
-func GetHash(d string) string {
-	ab20 := sha1.Sum([]byte(d))
-	return fmt.Sprintf("%x", ab20)
+// GenRandomName - generates a random name for an input key, e.g foo-sencsh, all lower case.
+func GenRandomNameLower(pref string) string {
+	return strings.ToLower(pref + "-" + UniqueID())
 }
 
-// String will generate a byte slice of size nBytes and then
-// return a string that is the base64 URL encoded version of
-// that byte slice.
-func String(nBytes int) (string, error) {
-	b, err := Bytes(nBytes)
+// GenerateRandomByteString returns a securely generated random string.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+func generateRandomByteString(n int, letters string) ([]byte, error) {
+	ret := make([]byte, n)
+	for i := 0; i < n; i++ {
+		num, err := crand.Int(crand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			return nil, err
+		}
+		ret[i] = base62chars[num.Int64()]
+	}
+
+	return ret, nil
+}
+
+// GenerateRandomString - same as byte string, but returns a pretty string.
+func GenerateRandomString(n int) (string, error) {
+	out, err := generateRandomByteString(n, base62chars)
 	if err != nil {
 		return "", err
 	}
-	return base64.URLEncoding.EncodeToString(b), nil
+	return string(out), nil
 }
 
-// Bytes will help us generate a random bytes, or will
-// return an error if there was one. This uses the crypto/rand
-// package so it is safe to use with things like hydra state.
-func Bytes(n int) ([]byte, error) {
-	b := make([]byte, n)
-	_, err := crand.Read(b)
+// GenerateRandomString - same as byte string, but returns a pretty string.
+func GenerateRandomPassword(n int) (string, error) {
+	out, err := generateRandomByteString(n, allChars)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return b, nil
+	return string(out), nil
+}
+
+// Gethash - calculates string hash with a trimmed length.
+func GetHash(s string, length int) string {
+	hash := md5.Sum([]byte(s))
+	return hex.EncodeToString(hash[:length])
 }
