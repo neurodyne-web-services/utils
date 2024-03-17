@@ -1,4 +1,4 @@
-package json
+package serdes
 
 import (
 	"bytes"
@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 )
 
-// MarshalGzip - JSON encoder with gzip compression.
-func MarshalGzip(data any) ([]byte, error) {
+// MarshalJSONGzip - JSON encoder with gzip compression.
+func MarshalJSONGzip(data any) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	g := gzip.NewWriter(buf)
 	enc := json.NewEncoder(g)
@@ -21,7 +21,7 @@ func MarshalGzip(data any) ([]byte, error) {
 }
 
 // UnmarshalGzip - JSON decoder with gzip compression.
-func UnmarshalGzip(b []byte, dst any) error {
+func UnmarshalJSONGzip(b []byte, dst any) error {
 	r := bytes.NewReader(b)
 	g, err := gzip.NewReader(r)
 	if err != nil {
