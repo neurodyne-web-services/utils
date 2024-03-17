@@ -3,6 +3,9 @@ module github.com/neurodyne-web-services/utils
 go 1.22
 
 require (
+	github.com/aws/smithy-go v1.20.1
+	github.com/mitchellh/go-homedir v1.1.0
+	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.33.0
