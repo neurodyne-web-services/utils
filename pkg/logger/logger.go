@@ -1,10 +1,8 @@
 package logger
 
 import (
-	"io"
 	"strings"
 
-	"github.com/neurodyne-web-services/utils/pkg/functional"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -66,7 +64,7 @@ var DevConfig = zap.Config{
 
 // NewPipedLogger - zap logger with multiple sinks.
 // we use strings for log type and verbosity since those come from confings which are strings in most clients.
-func NewPipedLogger(cfg zap.Config, config Config, sinks ...io.Writer) zapcore.Core {
+func NewPipedLogger(cfg zap.Config, config Config, syncers ...zapcore.WriteSyncer) zapcore.Core {
 	var enc zapcore.Encoder
 	var level zapcore.Level
 
@@ -95,10 +93,6 @@ func NewPipedLogger(cfg zap.Config, config Config, sinks ...io.Writer) zapcore.C
 	default:
 		level = zapcore.InfoLevel
 	}
-
-	syncers := functional.Map(sinks, func(w io.Writer) zapcore.WriteSyncer {
-		return zapcore.AddSync(w)
-	})
 
 	return zapcore.NewCore(
 		enc,
