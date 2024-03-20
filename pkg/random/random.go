@@ -1,5 +1,5 @@
 // Package random contains different random generators.
-package utils
+package random
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 )
 
 const base62chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-const allChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_,.?-~@#$%^+-&*()=\\/<>`"
+const AllChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_,.?-~@#$%^+-&*()=\\/<>`"
 
 // Random generates a random int between min and max, inclusive.
 func Random(min int, max int) int {
@@ -61,7 +61,7 @@ func GenRandomNameLower(pref string) string {
 // It will return an error if the system's secure random
 // number generator fails to function correctly, in which
 // case the caller should not continue.
-func generateRandomByteString(n int, letters string) ([]byte, error) {
+func GenerateRandomByteString(n int, letters string) ([]byte, error) {
 	ret := make([]byte, n)
 	for i := 0; i < n; i++ {
 		num, err := crand.Int(crand.Reader, big.NewInt(int64(len(letters))))
@@ -76,7 +76,7 @@ func generateRandomByteString(n int, letters string) ([]byte, error) {
 
 // GenerateRandomString - same as byte string, but returns a pretty string.
 func GenerateRandomString(n int) (string, error) {
-	out, err := generateRandomByteString(n, base62chars)
+	out, err := GenerateRandomByteString(n, base62chars)
 	if err != nil {
 		return "", err
 	}
@@ -85,7 +85,7 @@ func GenerateRandomString(n int) (string, error) {
 
 // GenerateRandomString - same as byte string, but returns a pretty string.
 func GenerateRandomPassword(n int) (string, error) {
-	out, err := generateRandomByteString(n, allChars)
+	out, err := GenerateRandomByteString(n, AllChars)
 	if err != nil {
 		return "", err
 	}

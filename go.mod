@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/aws/smithy-go v1.20.1
+	github.com/google/uuid v1.6.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/neurodyne-web-services/zap-loki v0.0.0-20240318121157-08b8d096b270
 	github.com/pkg/errors v0.9.1
