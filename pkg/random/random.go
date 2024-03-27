@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	crand "crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"strings"
@@ -13,7 +14,9 @@ import (
 )
 
 const base62chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-const AllChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_,.?-~@#$%^+-&*()=\\/<>`"
+const specialChars = "_,.?-~@#$%^+-&*()=\\/<>`"
+
+var AllChars = fmt.Sprintf("%s%s", base62chars, specialChars)
 
 // Random generates a random int between min and max, inclusive.
 func Random(min int, max int) int {
@@ -68,7 +71,7 @@ func GenerateRandomByteString(n int, letters string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		ret[i] = base62chars[num.Int64()]
+		ret[i] = letters[num.Int64()]
 	}
 
 	return ret, nil
