@@ -1,8 +1,10 @@
-package functional
+package functional_test
 
 import (
 	"fmt"
 	"testing"
+
+	"github.com/neurodyne-web-services/utils/pkg/functional"
 )
 
 type addr struct {
@@ -21,7 +23,7 @@ func Test_functional_int(t *testing.T) {
 
 	for _, d := range tc {
 		t.Run(d.name, func(t *testing.T) {
-			result := FoldMap(
+			result := functional.FoldMap(
 				d.list,
 				0,
 				func(a int) string {
@@ -48,7 +50,7 @@ func Test_functional_address(t *testing.T) {
 
 	for _, d := range tc {
 		t.Run(d.name, func(t *testing.T) {
-			result := FoldMap(
+			result := functional.FoldMap(
 				d.list,
 				addr{},
 				func(a addr) string {

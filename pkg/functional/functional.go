@@ -35,6 +35,15 @@ func Filter[E any](s []E, f func(E) bool) []E {
 	return result
 }
 
+// Flatten - flattens 2D slice into 1D.
+func Flatten[T any](lists [][]T) []T {
+	var res []T
+	for i := 0; i < len(lists); i++ {
+		res = append(res, lists[i]...)
+	}
+	return res
+}
+
 // Fold - generic reduce function.
 func Fold[E any](s []E, init E, f func(curr, next E) E) E {
 	cur := init

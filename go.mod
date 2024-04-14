@@ -3,7 +3,7 @@ module github.com/neurodyne-web-services/utils
 go 1.22
 
 require (
-	github.com/aws/smithy-go v1.20.1
+	github.com/aws/smithy-go v1.20.2
 	github.com/google/uuid v1.6.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/neurodyne-web-services/zap-loki v0.0.0-20240318121157-08b8d096b270
