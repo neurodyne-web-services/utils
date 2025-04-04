@@ -66,7 +66,7 @@ func GenRandomNameLower(pref string) string {
 // case the caller should not continue.
 func GenerateRandomByteString(n int, letters string) ([]byte, error) {
 	ret := make([]byte, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		num, err := crand.Int(crand.Reader, big.NewInt(int64(len(letters))))
 		if err != nil {
 			return nil, err
